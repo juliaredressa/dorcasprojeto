@@ -1,121 +1,329 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react'
+
+const API = 'http://localhost:3000/api'
+
+const formularioVazio = {
+  nome_item: '',
+  tamanho: '',
+  unidade_medida: '',
+  quantidade_minima: '',
+  id_categoria: ''
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [produtos, setProdutos] = useState([])
+  const [categorias, setCategorias] = useState([])
+  const [form, setForm] = useState(formularioVazio)
+  const [editando, setEditando] = useState(null)
+  const [mensagem, setMensagem] = useState('')
+  const [erro, setErro] = useState('')
+
+  useEffect(() => {
+    carregarDados()
+  }, [])
+
+  async function carregarDados() {
+    try {
+      const [resProdutos, resCategorias] = await Promise.all([
+        fetch(`${API}/produtos`),
+        fetch(`${API}/categorias`)
+      ])
+
+      if (!resProdutos.ok || !resCategorias.ok) {
+        throw new Error()
+      }
+
+      setProdutos(await resProdutos.json())
+      setCategorias(await resCategorias.json())
+    } catch {
+      setErro(
+        'Não foi possível carregar os dados. Verifique se o backend está ligado.'
+      )
+    }
+  }
+
+  function alterarCampo(e) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  function validar() {
+    if (!form.nome_item.trim()) {
+      return 'Preencha o nome do produto.'
+    }
+
+    if (!form.unidade_medida.trim()) {
+      return 'Preencha a unidade de medida.'
+    }
+
+    if (
+      form.quantidade_minima === '' ||
+      Number(form.quantidade_minima) <= 0
+    ) {
+      return 'A quantidade mínima deve ser maior que zero.'
+    }
+
+    if (!form.id_categoria) {
+      return 'Selecione uma categoria.'
+    }
+
+    return ''
+  }
+
+  async function salvar(e) {
+    e.preventDefault()
+
+    setMensagem('')
+    setErro('')
+
+    const validacao = validar()
+
+    if (validacao) {
+      return setErro(validacao)
+    }
+
+    const url = editando
+      ? `${API}/produtos/${editando}`
+      : `${API}/produtos`
+
+    const metodo = editando ? 'PUT' : 'POST'
+
+    try {
+      const resposta = await fetch(url, {
+        method: metodo,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(form)
+      })
+
+      const dados = await resposta.json()
+
+      if (!resposta.ok) {
+        return setErro(dados.mensagem || 'Não foi possível salvar.')
+      }
+
+      setMensagem(dados.mensagem)
+      cancelarEdicao()
+      carregarDados()
+    } catch {
+      setErro('Erro ao conectar com o servidor.')
+    }
+  }
+
+  function editar(produto) {
+    setEditando(produto.id_item)
+
+    setForm({
+      nome_item: produto.nome_item,
+      tamanho: produto.tamanho || '',
+      unidade_medida: produto.unidade_medida,
+      quantidade_minima: produto.quantidade_minima,
+      id_categoria: produto.id_categoria
+    })
+
+    setMensagem('')
+    setErro('')
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  function cancelarEdicao() {
+    setEditando(null)
+    setForm(formularioVazio)
+  }
+
+  async function excluir(id) {
+    if (!window.confirm('Deseja realmente excluir este produto?')) {
+      return
+    }
+
+    setMensagem('')
+    setErro('')
+
+    try {
+      const resposta = await fetch(`${API}/produtos/${id}`, {
+        method: 'DELETE'
+      })
+
+      const dados = await resposta.json()
+
+      if (!resposta.ok) {
+        return setErro(dados.mensagem || 'Não foi possível excluir.')
+      }
+
+      setMensagem(dados.mensagem)
+      carregarDados()
+    } catch {
+      setErro('Erro ao conectar com o servidor.')
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+    <main className="pagina">
+      <header>
+        <h1>Projeto Dorcas</h1>
+        <p>Cadastro de produtos para doação</p>
+      </header>
+
+      <section className="card">
+        <h2>{editando ? 'Editar produto' : 'Novo produto'}</h2>
+
+        <form onSubmit={salvar}>
+          <div className="campos">
+
+            <label>
+              Nome do produto
+              <input
+                name="nome_item"
+                value={form.nome_item}
+                onChange={alterarCampo}
+                placeholder="Ex.: Fralda descartável"
+              />
+            </label>
+
+            <label>
+              Tamanho
+              <input
+                name="tamanho"
+                value={form.tamanho}
+                onChange={alterarCampo}
+                placeholder="Ex.: P, M, G"
+              />
+            </label>
+
+            <label>
+              Unidade de medida
+              <input
+                name="unidade_medida"
+                value={form.unidade_medida}
+                onChange={alterarCampo}
+                placeholder="Ex.: unidade, pacote"
+              />
+            </label>
+
+            <label>
+              Quantidade mínima
+              <input
+                type="number"
+                min="1"
+                step="1"
+                name="quantidade_minima"
+                value={form.quantidade_minima}
+                onChange={alterarCampo}
+              />
+            </label>
+
+            <label>
+              Categoria
+              <select
+                name="id_categoria"
+                value={form.id_categoria}
+                onChange={alterarCampo}
+              >
+                <option value="">Selecione</option>
+
+                {categorias.map((categoria) => (
+                  <option
+                    key={categoria.id_categoria}
+                    value={categoria.id_categoria}
+                  >
+                    {categoria.nome_categoria}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+          </div>
+
+          <div className="acoes-form">
+            <button type="submit">
+              {editando ? 'Salvar alterações' : 'Cadastrar'}
+            </button>
+
+            {editando && (
+              <button
+                type="button"
+                className="secundario"
+                onClick={cancelarEdicao}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+
+        {erro && (
+          <p className="aviso erro">
+            {erro}
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+        )}
+
+        {mensagem && (
+          <p className="aviso sucesso">
+            {mensagem}
+          </p>
+        )}
       </section>
 
-      <div className="ticks"></div>
+      <section className="card">
+        <h2>Produtos cadastrados</h2>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
+        {produtos.length === 0 ? (
+          <p className="vazio">
+            Nenhum produto cadastrado.
+          </p>
+        ) : (
+          <div className="tabela-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Tamanho</th>
+                  <th>Unidade</th>
+                  <th>Mínimo</th>
+                  <th>Categoria</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {produtos.map((produto) => (
+                  <tr key={produto.id_item}>
+                    <td>{produto.nome_item}</td>
+                    <td>{produto.tamanho || '-'}</td>
+                    <td>{produto.unidade_medida}</td>
+                    <td>{produto.quantidade_minima}</td>
+                    <td>{produto.nome_categoria}</td>
+
+                    <td className="acoes">
+                      <button
+                        className="editar"
+                        onClick={() => editar(produto)}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        className="excluir"
+                        onClick={() => excluir(produto.id_item)}
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </main>
   )
 }
 
