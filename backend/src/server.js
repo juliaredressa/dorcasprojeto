@@ -7,6 +7,7 @@ const triagemRoutes = require("./routes/triagemRoutes");
 const doacaoRoutes = require("./routes/doacaoRoutes");
 const kitRoutes = require("./routes/kitRoutes");
 const estoqueRoutes = require("./routes/estoqueRoutes");
+const filaPrioridadeRoutes = require("./routes/filaPrioridadeRoutes");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/triagens", triagemRoutes);
 app.use("/api/doacoes", doacaoRoutes);
 app.use("/api/kits", kitRoutes);
 app.use("/api/estoque", estoqueRoutes);
+app.use("/api/fila-prioridade", filaPrioridadeRoutes);
 
 app.get("/", (req, res) => {
     res.json({
