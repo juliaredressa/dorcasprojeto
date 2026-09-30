@@ -1,9 +1,9 @@
-
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
 const gestanteRoutes = require("./routes/gestanteRoutes");
+const triagemRoutes = require("./routes/triagemRoutes");
 
 const app = express();
 
@@ -11,6 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/gestantes", gestanteRoutes);
+app.use("/api/triagens", triagemRoutes);
 
 app.get("/", (req, res) => {
     res.json({
