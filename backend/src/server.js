@@ -6,6 +6,7 @@ const gestanteRoutes = require("./routes/gestanteRoutes");
 const triagemRoutes = require("./routes/triagemRoutes");
 const doacaoRoutes = require("./routes/doacaoRoutes");
 const kitRoutes = require("./routes/kitRoutes");
+const estoqueRoutes = require("./routes/estoqueRoutes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use("/api/gestantes", gestanteRoutes);
 app.use("/api/triagens", triagemRoutes);
 app.use("/api/doacoes", doacaoRoutes);
 app.use("/api/kits", kitRoutes);
+app.use("/api/estoque", estoqueRoutes);
 
 app.get("/", (req, res) => {
     res.json({
