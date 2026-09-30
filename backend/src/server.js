@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const gestanteRoutes = require("./routes/gestanteRoutes");
 const triagemRoutes = require("./routes/triagemRoutes");
+const doacaoRoutes = require("./routes/doacaoRoutes");
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(express.json());
 
 app.use("/api/gestantes", gestanteRoutes);
 app.use("/api/triagens", triagemRoutes);
+app.use("/api/doacoes", doacaoRoutes);
 
 app.get("/", (req, res) => {
     res.json({
