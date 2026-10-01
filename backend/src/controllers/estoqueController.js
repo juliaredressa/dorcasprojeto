@@ -1,4 +1,5 @@
 const db = require("../database");
+
 const {
     adicionarAoEstoque,
     retirarDoEstoque
@@ -9,21 +10,32 @@ const {
 const entradaEstoque = async (req, res) => {
     const { id_item, quantidade } = req.body;
 
-    if (!id_item || !quantidade) {
+    if (
+        !id_item ||
+        quantidade === undefined ||
+        !Number.isInteger(Number(quantidade)) ||
+        Number(quantidade) <= 0
+    ) {
         return res.status(400).json({
-            erro: "Informe o item e a quantidade."
+            erro: "Informe um item e uma quantidade inteira maior que zero."
         });
     }
 
     try {
-        await adicionarAoEstoque(db.promise(), id_item, quantidade);
+        await adicionarAoEstoque(
+            db.promise(),
+            id_item,
+            Number(quantidade)
+        );
 
         res.json({
             mensagem: "Estoque atualizado com sucesso!"
         });
 
     } catch (erro) {
-        res.status(500).json({
+        console.error(erro);
+
+        res.status(400).json({
             erro: erro.message
         });
     }
@@ -34,20 +46,31 @@ const entradaEstoque = async (req, res) => {
 const saidaEstoque = async (req, res) => {
     const { id_item, quantidade } = req.body;
 
-    if (!id_item || !quantidade) {
+    if (
+        !id_item ||
+        quantidade === undefined ||
+        !Number.isInteger(Number(quantidade)) ||
+        Number(quantidade) <= 0
+    ) {
         return res.status(400).json({
-            erro: "Informe o item e a quantidade."
+            erro: "Informe um item e uma quantidade inteira maior que zero."
         });
     }
 
     try {
-        await retirarDoEstoque(db.promise(), id_item, quantidade);
+        await retirarDoEstoque(
+            db.promise(),
+            id_item,
+            Number(quantidade)
+        );
 
         res.json({
             mensagem: "Saída de estoque realizada com sucesso!"
         });
 
     } catch (erro) {
+        console.error(erro);
+
         res.status(400).json({
             erro: erro.message
         });
