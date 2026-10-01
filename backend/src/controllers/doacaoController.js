@@ -1,5 +1,10 @@
 const db = require("../database");
 
+const {
+    adicionarAoEstoque
+} = require("../services/estoqueService");
+
+
 // LISTAR TODAS AS DOAÇÕES
 const listarDoacoes = (req, res) => {
     const sql = `
@@ -194,6 +199,7 @@ const cadastrarDoacao = async (req, res) => {
 
         // Registrar os itens recebidos
         for (const item of itens) {
+
             const [itensEncontrados] = await conexao.query(
                 `
                 SELECT id_item
@@ -211,6 +217,9 @@ const cadastrarDoacao = async (req, res) => {
                 });
             }
 
+            const quantidade = Number(item.quantidade);
+
+            // Registrar item da doação
             await conexao.query(
                 `
                 INSERT INTO item_doacao_recebida
@@ -224,15 +233,22 @@ const cadastrarDoacao = async (req, res) => {
                 [
                     idDoacao,
                     item.id_item,
-                    Number(item.quantidade)
+                    quantidade
                 ]
+            );
+
+            // Atualizar estoque automaticamente
+            await adicionarAoEstoque(
+                conexao,
+                item.id_item,
+                quantidade
             );
         }
 
         await conexao.commit();
 
         res.status(201).json({
-            mensagem: "Doação cadastrada com sucesso!",
+            mensagem: "Doação cadastrada com sucesso e estoque atualizado!",
             id_doacao: idDoacao
         });
 
@@ -242,7 +258,8 @@ const cadastrarDoacao = async (req, res) => {
         console.error(erro);
 
         res.status(500).json({
-            erro: "Erro ao cadastrar doação."
+            erro: "Erro ao cadastrar doação.",
+            detalhe: erro.message
         });
     }
 };
