@@ -141,7 +141,7 @@ const cadastrarDoacao = async (req, res) => {
     try {
         await conexao.beginTransaction();
 
-        // Verificar doador
+        // VERIFICAR DOADOR
         const [doadores] = await conexao.query(
             `
             SELECT id_pessoa
@@ -159,7 +159,7 @@ const cadastrarDoacao = async (req, res) => {
             });
         }
 
-        // Verificar funcionário
+        // VERIFICAR FUNCIONÁRIO
         const [funcionarios] = await conexao.query(
             `
             SELECT id_pessoa
@@ -177,7 +177,7 @@ const cadastrarDoacao = async (req, res) => {
             });
         }
 
-        // Registrar a doação
+        // REGISTRAR A DOAÇÃO
         const [resultadoDoacao] = await conexao.query(
             `
             INSERT INTO doacao
@@ -197,7 +197,7 @@ const cadastrarDoacao = async (req, res) => {
 
         const idDoacao = resultadoDoacao.insertId;
 
-        // Registrar os itens recebidos
+        // REGISTRAR OS ITENS RECEBIDOS
         for (const item of itens) {
 
             const [itensEncontrados] = await conexao.query(
@@ -219,7 +219,7 @@ const cadastrarDoacao = async (req, res) => {
 
             const quantidade = Number(item.quantidade);
 
-            // Registrar item da doação
+            // REGISTRAR ITEM DA DOAÇÃO
             await conexao.query(
                 `
                 INSERT INTO item_doacao_recebida
@@ -237,7 +237,7 @@ const cadastrarDoacao = async (req, res) => {
                 ]
             );
 
-            // Atualizar estoque automaticamente
+            // ATUALIZAR ESTOQUE AUTOMATICAMENTE
             await adicionarAoEstoque(
                 conexao,
                 item.id_item,
@@ -274,6 +274,7 @@ const excluirDoacao = async (req, res) => {
     try {
         await conexao.beginTransaction();
 
+        // VERIFICAR SE A DOAÇÃO EXISTE
         const [doacoes] = await conexao.query(
             `
             SELECT id_doacao
@@ -291,6 +292,28 @@ const excluirDoacao = async (req, res) => {
             });
         }
 
+        // BUSCAR OS ITENS DA DOAÇÃO
+        const [itens] = await conexao.query(
+            `
+            SELECT
+                id_item,
+                quantidade
+            FROM item_doacao_recebida
+            WHERE id_doacao = ?
+            `,
+            [id]
+        );
+
+        // DEVOLVER AS QUANTIDADES AO ESTOQUE
+        for (const item of itens) {
+            await adicionarAoEstoque(
+                conexao,
+                item.id_item,
+                item.quantidade
+            );
+        }
+
+        // EXCLUIR OS ITENS DA DOAÇÃO
         await conexao.query(
             `
             DELETE FROM item_doacao_recebida
@@ -299,6 +322,7 @@ const excluirDoacao = async (req, res) => {
             [id]
         );
 
+        // EXCLUIR A DOAÇÃO
         await conexao.query(
             `
             DELETE FROM doacao
@@ -310,7 +334,7 @@ const excluirDoacao = async (req, res) => {
         await conexao.commit();
 
         res.json({
-            mensagem: "Doação excluída com sucesso!"
+            mensagem: "Doação excluída e estoque atualizado com sucesso!"
         });
 
     } catch (erro) {
@@ -319,7 +343,8 @@ const excluirDoacao = async (req, res) => {
         console.error(erro);
 
         res.status(500).json({
-            erro: "Erro ao excluir doação."
+            erro: "Erro ao excluir doação.",
+            detalhe: erro.message
         });
     }
 };
