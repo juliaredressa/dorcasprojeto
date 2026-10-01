@@ -1,5 +1,11 @@
 const db = require("../database");
 
+const {
+    retirarDoEstoque,
+    adicionarAoEstoque
+} = require("../services/estoqueService");
+
+
 // LISTAR TODOS OS KITS
 const listarKits = (req, res) => {
     const sql = `
@@ -178,6 +184,26 @@ const cadastrarKit = async (req, res) => {
             });
         }
 
+        // VERIFICAR TODOS OS ITENS ANTES DE CRIAR O KIT
+        for (const item of itens) {
+            const [itensEncontrados] = await conexao.query(
+                `
+                SELECT id_item
+                FROM item_doacao
+                WHERE id_item = ?
+                `,
+                [item.id_item]
+            );
+
+            if (itensEncontrados.length === 0) {
+                await conexao.rollback();
+
+                return res.status(404).json({
+                    erro: `Item ${item.id_item} não encontrado.`
+                });
+            }
+        }
+
         // CADASTRAR KIT
         const [resultadoKit] = await conexao.query(
             `
@@ -202,24 +228,9 @@ const cadastrarKit = async (req, res) => {
 
         const idKit = resultadoKit.insertId;
 
-        // CADASTRAR ITENS DO KIT
+        // CADASTRAR ITENS E RETIRAR DO ESTOQUE
         for (const item of itens) {
-            const [itensEncontrados] = await conexao.query(
-                `
-                SELECT id_item
-                FROM item_doacao
-                WHERE id_item = ?
-                `,
-                [item.id_item]
-            );
-
-            if (itensEncontrados.length === 0) {
-                await conexao.rollback();
-
-                return res.status(404).json({
-                    erro: `Item ${item.id_item} não encontrado.`
-                });
-            }
+            const quantidade = Number(item.quantidade);
 
             await conexao.query(
                 `
@@ -234,15 +245,21 @@ const cadastrarKit = async (req, res) => {
                 [
                     idKit,
                     item.id_item,
-                    Number(item.quantidade)
+                    quantidade
                 ]
+            );
+
+            await retirarDoEstoque(
+                conexao,
+                item.id_item,
+                quantidade
             );
         }
 
         await conexao.commit();
 
         res.status(201).json({
-            mensagem: "Kit cadastrado com sucesso!",
+            mensagem: "Kit cadastrado com sucesso e estoque atualizado!",
             id_kit: idKit
         });
 
@@ -251,8 +268,8 @@ const cadastrarKit = async (req, res) => {
 
         console.error(erro);
 
-        res.status(500).json({
-            erro: "Erro ao cadastrar kit."
+        res.status(400).json({
+            erro: erro.message
         });
     }
 };
@@ -318,6 +335,7 @@ const excluirKit = async (req, res) => {
     try {
         await conexao.beginTransaction();
 
+        // VERIFICAR KIT
         const [kits] = await conexao.query(
             `
             SELECT id_kit
@@ -335,6 +353,28 @@ const excluirKit = async (req, res) => {
             });
         }
 
+        // BUSCAR ITENS DO KIT
+        const [itens] = await conexao.query(
+            `
+            SELECT
+                id_item,
+                quantidade
+            FROM item_kit
+            WHERE id_kit = ?
+            `,
+            [id]
+        );
+
+        // DEVOLVER OS ITENS AO ESTOQUE
+        for (const item of itens) {
+            await adicionarAoEstoque(
+                conexao,
+                item.id_item,
+                item.quantidade
+            );
+        }
+
+        // EXCLUIR ITENS DO KIT
         await conexao.query(
             `
             DELETE FROM item_kit
@@ -343,6 +383,7 @@ const excluirKit = async (req, res) => {
             [id]
         );
 
+        // EXCLUIR KIT
         await conexao.query(
             `
             DELETE FROM kit_maternidade
@@ -354,7 +395,7 @@ const excluirKit = async (req, res) => {
         await conexao.commit();
 
         res.json({
-            mensagem: "Kit excluído com sucesso!"
+            mensagem: "Kit excluído e itens devolvidos ao estoque!"
         });
 
     } catch (erro) {
@@ -362,8 +403,8 @@ const excluirKit = async (req, res) => {
 
         console.error(erro);
 
-        res.status(500).json({
-            erro: "Erro ao excluir kit."
+        res.status(400).json({
+            erro: erro.message
         });
     }
 };
