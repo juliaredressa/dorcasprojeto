@@ -9,6 +9,11 @@ const swaggerDocument = require("./swagger");
 
 const categoriaRoutes = require("./routes/categoriaRoutes");
 const gestanteRoutes = require("./routes/gestanteRoutes");
+const triagemRoutes = require("./routes/triagemRoutes");
+const doacaoRoutes = require("./routes/doacaoRoutes");
+const kitRoutes = require("./routes/kitRoutes");
+const estoqueRoutes = require("./routes/estoqueRoutes");
+const filaPrioridadeRoutes = require("./routes/filaPrioridadeRoutes");
 const produtoRoutes = require("./routes/produtoRoutes");
 const colaboradorRoutes = require("./routes/colaboradorRoutes");
 const loginRoutes = require("./routes/loginRoutes");
@@ -46,6 +51,17 @@ app.use(
 // ROTAS
 app.use("/api/categorias", categoriaRoutes);
 app.use("/api/gestantes", gestanteRoutes);
+app.use("/api/triagens", triagemRoutes);
+app.use("/api/doacoes", doacaoRoutes);
+app.use("/api/kits", kitRoutes);
+app.use("/api/estoque", estoqueRoutes);
+app.use("/api/fila-prioridade", filaPrioridadeRoutes);
+
+app.get("/", (req, res) => {
+    res.json({
+        mensagem: "API DorcasGestão funcionando!"
+    });
+});
 app.use("/api/produtos", produtoRoutes);
 app.use("/api/colaboradores", colaboradorRoutes);
 app.use("/api/login", loginRoutes);
