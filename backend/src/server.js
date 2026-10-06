@@ -1,22 +1,54 @@
-
 const express = require("express");
 const cors = require("cors");
+const session = require("express-session");
 const swaggerUi = require("swagger-ui-express");
 
 require("dotenv").config();
+
 const swaggerDocument = require("./swagger");
+
 const categoriaRoutes = require("./routes/categoriaRoutes");
 const gestanteRoutes = require("./routes/gestanteRoutes");
 const produtoRoutes = require("./routes/produtoRoutes");
+const colaboradorRoutes = require("./routes/colaboradorRoutes");
+const loginRoutes = require("./routes/loginRoutes");
 
 const app = express();
 
-app.use(cors());
+app.use(
+    cors({
+        origin: "http://localhost:5173",
+        credentials: true
+    })
+);
+
 app.use(express.json());
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET || "dorcas-secret",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,
+            secure: false,
+            maxAge: 1000 * 60 * 60 * 8
+        }
+    })
+);
+
+app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerDocument)
+);
+
+// ROTAS
 app.use("/api/categorias", categoriaRoutes);
 app.use("/api/gestantes", gestanteRoutes);
 app.use("/api/produtos", produtoRoutes);
+app.use("/api/colaboradores", colaboradorRoutes);
+app.use("/api/login", loginRoutes);
 
 const PORT = process.env.PORT || 3000;
 

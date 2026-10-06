@@ -177,3 +177,15 @@ CREATE TABLE alerta_estoque (
     CONSTRAINT fk_alerta_item
         FOREIGN KEY (id_item) REFERENCES item_doacao(id_item)
 ) ENGINE=InnoDB;
+
+CREATE TABLE usuario (
+    id_usuario INT NOT NULL AUTO_INCREMENT,
+    id_funcionario INT NOT NULL,
+    login VARCHAR(100) NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id_usuario),
+    UNIQUE KEY uk_usuario_login (login),
+    CONSTRAINT fk_usuario_funcionario
+        FOREIGN KEY (id_funcionario)
+        REFERENCES funcionario(id_pessoa)
+) ENGINE=InnoDB;
