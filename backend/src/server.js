@@ -5,7 +5,22 @@ require("dotenv").config();
 
 const gestanteRoutes = require("./routes/gestanteRoutes");
 
+app.use('/gestante', gestanteRoutes);
+
 const app = express();
+
+const produtosRoutes = require('./routes/produtos');
+
+app.use('/produtos', produtosRoutes);
+
+const colaboradoresRoutes =
+    require('./routes/colaboradores');
+
+app.use('/colaboradores', colaboradoresRoutes);
+
+const authRoutes = require('./routes/auth');
+
+app.use('/auth', authRoutes);
 
 app.use(cors());
 app.use(express.json());
@@ -19,6 +34,8 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
