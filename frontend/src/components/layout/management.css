@@ -3,6 +3,13 @@
   padding-bottom: 28px;
 }
 
+.management-content,
+.management-content *,
+.management-content *::before,
+.management-content *::after {
+  box-sizing: border-box;
+}
+
 .management-heading {
   margin: 0 38px 22px;
 }
@@ -135,6 +142,13 @@
   font: 400 13px 'DM Sans', 'Trebuchet MS', sans-serif;
   letter-spacing: 0;
   transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.management-field input,
+.management-field select,
+.management-content .campo input,
+.management-content .campo select {
+  height: 42px;
 }
 
 .management-field input::placeholder {

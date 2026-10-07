@@ -71,9 +71,12 @@ const buscarGestante = (req, res) => {
 
 
 // CADASTRAR
-const cadastrarGestante = (req, res) => {
+const cadastrarGestante = async (req, res) => {
     const {
-        id_pessoa,
+        nome,
+        cpf,
+        telefone,
+        endereco,
         dpp,
         grau_vulnerabilidade,
         data_cadastro,
@@ -81,104 +84,86 @@ const cadastrarGestante = (req, res) => {
     } = req.body;
 
     if (
-        !id_pessoa ||
+        !nome?.trim() ||
+        !cpf?.trim() ||
         !dpp ||
         grau_vulnerabilidade === undefined ||
         !data_cadastro ||
         !situacao
     ) {
         return res.status(400).json({
-            erro: "Todos os campos são obrigatórios."
+            erro: "Nome, CPF e todos os dados da gestação são obrigatórios."
         });
     }
 
-    if (grau_vulnerabilidade < 1 || grau_vulnerabilidade > 5) {
+    const grauVulnerabilidade = Number(grau_vulnerabilidade);
+
+    if (!Number.isInteger(grauVulnerabilidade) || grauVulnerabilidade < 1 || grauVulnerabilidade > 5) {
         return res.status(400).json({
             erro: "O grau de vulnerabilidade deve estar entre 1 e 5."
         });
     }
 
-    const verificarPessoa = `
-        SELECT id_pessoa
-        FROM pessoa
-        WHERE id_pessoa = ?
-    `;
+    const conexao = db.promise();
+    let transacaoIniciada = false;
 
-    db.query(verificarPessoa, [id_pessoa], (erro, pessoas) => {
-        if (erro) {
-            return res.status(500).json({
-                erro: "Erro ao verificar pessoa."
-            });
-        }
+    try {
+        await conexao.beginTransaction();
+        transacaoIniciada = true;
 
-        if (pessoas.length === 0) {
-            return res.status(404).json({
-                erro: "Pessoa não encontrada."
-            });
-        }
+        const [pessoa] = await conexao.query(
+            `
+                INSERT INTO pessoa (nome, cpf, telefone, endereco)
+                VALUES (?, ?, ?, ?)
+                `,
+            [nome.trim(), cpf.trim(), telefone?.trim() || null, endereco?.trim() || null]
+        );
 
-        const verificarGestante = `
-            SELECT id_pessoa
-            FROM gestante
-            WHERE id_pessoa = ?
-        `;
-
-        db.query(verificarGestante, [id_pessoa], (erro, gestantes) => {
-            if (erro) {
-                return res.status(500).json({
-                    erro: "Erro ao verificar gestante."
-                });
-            }
-
-            if (gestantes.length > 0) {
-                return res.status(400).json({
-                    erro: "Esta pessoa já está cadastrada como gestante."
-                });
-            }
-
-            const sql = `
+        await conexao.query(
+            `
                 INSERT INTO gestante
-                (
-                    id_pessoa,
-                    dpp,
-                    grau_vulnerabilidade,
-                    data_cadastro,
-                    situacao
-                )
+                (id_pessoa, dpp, grau_vulnerabilidade, data_cadastro, situacao)
                 VALUES (?, ?, ?, ?, ?)
-            `;
+                `,
+            [pessoa.insertId, dpp, grauVulnerabilidade, data_cadastro, situacao]
+        );
 
-            db.query(
-                sql,
-                [
-                    id_pessoa,
-                    dpp,
-                    grau_vulnerabilidade,
-                    data_cadastro,
-                    situacao
-                ],
-                (erro) => {
-                    if (erro) {
-                        return res.status(500).json({
-                            erro: "Erro ao cadastrar gestante."
-                        });
-                    }
+        await conexao.commit();
+        transacaoIniciada = false;
 
-                    res.status(201).json({
-                        mensagem: "Gestante cadastrada com sucesso!"
-                    });
-                }
-            );
+        res.status(201).json({
+            id_pessoa: pessoa.insertId,
+            mensagem: "Gestante cadastrada com sucesso!"
         });
-    });
+    } catch (erro) {
+        if (transacaoIniciada) {
+            await conexao.rollback();
+        }
+
+        console.error(erro);
+
+        if (erro.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({
+                erro: "Já existe uma pessoa cadastrada com este CPF."
+            });
+        }
+
+        res.status(500).json({
+            erro: "Erro ao cadastrar gestante."
+        });
+    }
 };
 
 
 // ATUALIZAR
-const atualizarGestante = (req, res) => {
+const atualizarGestante = async (req, res) => {
     const { id } = req.params;
 
     const {
+        nome,
+        cpf,
+        telefone,
+        endereco,
         dpp,
         grau_vulnerabilidade,
         data_cadastro,
@@ -186,59 +171,81 @@ const atualizarGestante = (req, res) => {
     } = req.body;
 
     if (
+        !nome?.trim() ||
+        !cpf?.trim() ||
         !dpp ||
         grau_vulnerabilidade === undefined ||
         !data_cadastro ||
         !situacao
     ) {
         return res.status(400).json({
-            erro: "Todos os campos são obrigatórios."
+            erro: "Nome, CPF e todos os dados da gestação são obrigatórios."
         });
     }
 
-    if (grau_vulnerabilidade < 1 || grau_vulnerabilidade > 5) {
+    const grauVulnerabilidade = Number(grau_vulnerabilidade);
+
+    if (!Number.isInteger(grauVulnerabilidade) || grauVulnerabilidade < 1 || grauVulnerabilidade > 5) {
         return res.status(400).json({
             erro: "O grau de vulnerabilidade deve estar entre 1 e 5."
         });
     }
 
-    const sql = `
-        UPDATE gestante
-        SET
-            dpp = ?,
-            grau_vulnerabilidade = ?,
-            data_cadastro = ?,
-            situacao = ?
-        WHERE id_pessoa = ?
-    `;
+    const conexao = db.promise();
+    let transacaoIniciada = false;
 
-    db.query(
-        sql,
-        [
-            dpp,
-            grau_vulnerabilidade,
-            data_cadastro,
-            situacao,
-            id
-        ],
-        (erro, resultado) => {
-            if (erro) {
-                return res.status(500).json({
-                    erro: "Erro ao atualizar gestante."
-                });
-            }
+    try {
+        await conexao.beginTransaction();
+        transacaoIniciada = true;
 
-            if (resultado.affectedRows === 0) {
-                return res.status(404).json({
-                    erro: "Gestante não encontrada."
-                });
-            }
+        const [gestantes] = await conexao.query(
+            "SELECT id_pessoa FROM gestante WHERE id_pessoa = ? FOR UPDATE",
+            [id]
+        );
 
-            res.json({
-                mensagem: "Gestante atualizada com sucesso!"
+        if (gestantes.length === 0) {
+            await conexao.rollback();
+            transacaoIniciada = false;
+            return res.status(404).json({ erro: "Gestante não encontrada." });
+        }
+
+        await conexao.query(
+            `
+                UPDATE pessoa
+                SET nome = ?, cpf = ?, telefone = ?, endereco = ?
+                WHERE id_pessoa = ?
+                `,
+            [nome.trim(), cpf.trim(), telefone?.trim() || null, endereco?.trim() || null, id]
+        );
+
+        await conexao.query(
+            `
+                UPDATE gestante
+                SET dpp = ?, grau_vulnerabilidade = ?, data_cadastro = ?, situacao = ?
+                WHERE id_pessoa = ?
+                `,
+            [dpp, grauVulnerabilidade, data_cadastro, situacao, id]
+        );
+
+        await conexao.commit();
+        transacaoIniciada = false;
+
+        res.json({ mensagem: "Gestante atualizada com sucesso!" });
+    } catch (erro) {
+        if (transacaoIniciada) {
+            await conexao.rollback();
+        }
+
+        console.error(erro);
+
+        if (erro.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({
+                erro: "Já existe uma pessoa cadastrada com este CPF."
             });
         }
-    );
+
+        res.status(500).json({ erro: "Erro ao atualizar gestante." });
+    }
 };
 
 

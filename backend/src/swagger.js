@@ -65,7 +65,7 @@ module.exports = {
       },
       post: {
         tags: ['Gestantes'],
-        summary: 'Cadastra uma gestante para uma pessoa existente',
+        summary: 'Cadastra uma pessoa e sua gestação com identificador automático',
         requestBody: { $ref: '#/components/requestBodies/GestanteCadastro' },
         responses: {
           201: {
@@ -73,7 +73,7 @@ module.exports = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/ResultadoGestante' } } }
           },
           400: { $ref: '#/components/responses/ErroRequisicao' },
-          404: { $ref: '#/components/responses/NaoEncontrado' },
+          409: { $ref: '#/components/responses/Conflito' },
           500: { $ref: '#/components/responses/ErroServidor' }
         }
       }
@@ -111,6 +111,7 @@ module.exports = {
           },
           400: { $ref: '#/components/responses/ErroRequisicao' },
           404: { $ref: '#/components/responses/NaoEncontrado' },
+          409: { $ref: '#/components/responses/Conflito' },
           500: { $ref: '#/components/responses/ErroServidor' }
         }
       },
@@ -226,7 +227,6 @@ module.exports = {
           id_pessoa: { type: 'integer' },
           nome: { type: 'string' },
           cpf: { type: 'string' },
-          data_nascimento: { type: 'string', format: 'date' },
           telefone: { type: 'string' },
           endereco: { type: 'string' },
           dpp: { type: 'string', format: 'date' },
@@ -237,9 +237,12 @@ module.exports = {
       },
       GestanteCadastro: {
         type: 'object',
-        required: ['id_pessoa', 'dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
+        required: ['nome', 'cpf', 'dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
         properties: {
-          id_pessoa: { type: 'integer', example: 1 },
+          nome: { type: 'string', maxLength: 150, example: 'Maria da Silva' },
+          cpf: { type: 'string', maxLength: 14, example: '123.456.789-00' },
+          telefone: { type: 'string', maxLength: 20, nullable: true },
+          endereco: { type: 'string', maxLength: 255, nullable: true },
           dpp: { type: 'string', format: 'date', example: '2026-12-15' },
           grau_vulnerabilidade: { type: 'integer', minimum: 1, maximum: 5, example: 3 },
           data_cadastro: { type: 'string', format: 'date', example: '2026-09-29' },
@@ -248,8 +251,12 @@ module.exports = {
       },
       GestanteAtualizacao: {
         type: 'object',
-        required: ['dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
+        required: ['nome', 'cpf', 'dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
         properties: {
+          nome: { type: 'string', maxLength: 150, example: 'Maria da Silva' },
+          cpf: { type: 'string', maxLength: 14, example: '123.456.789-00' },
+          telefone: { type: 'string', maxLength: 20, nullable: true },
+          endereco: { type: 'string', maxLength: 255, nullable: true },
           dpp: { type: 'string', format: 'date', example: '2026-12-15' },
           grau_vulnerabilidade: { type: 'integer', minimum: 1, maximum: 5, example: 3 },
           data_cadastro: { type: 'string', format: 'date', example: '2026-09-29' },
@@ -289,6 +296,7 @@ module.exports = {
       ResultadoGestante: {
         type: 'object',
         properties: {
+          id_pessoa: { type: 'integer', description: 'Gerado automaticamente pelo banco de dados.' },
           mensagem: { type: 'string' }
         }
       },
