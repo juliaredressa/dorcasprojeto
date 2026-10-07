@@ -603,16 +603,18 @@ Object.assign(module.exports.components.schemas, {
   },
   Colaborador: {
     type: 'object',
-    required: ['nome', 'cpf', 'cargo', 'matricula', 'data_admissao'],
+    required: ['nome', 'cpf', 'cargo', 'data_admissao'],
     properties: {
-      id_pessoa: { type: 'integer' },
+      id_pessoa: { type: 'integer', readOnly: true, description: 'ID de cadastro gerado automaticamente.' },
       nome: { type: 'string' },
       cpf: { type: 'string' },
       telefone: { type: 'string', nullable: true },
       email: { type: 'string', format: 'email', nullable: true },
       endereco: { type: 'string', nullable: true },
-      cargo: { type: 'string' },
-      matricula: { type: 'string' },
+      cargo: {
+        type: 'string',
+        enum: ['Administrador(a)', 'Assistente social', 'Auxiliar administrativo(a)', 'Coordenador(a)', 'Educador(a) social', 'Psicólogo(a)', 'Recepcionista', 'Outro']
+      },
       data_admissao: { type: 'string', format: 'date' }
     }
   },

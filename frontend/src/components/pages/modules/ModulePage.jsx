@@ -39,7 +39,7 @@ const labelOverrides = {
   id_gestante: 'ID da gestante',
   id_item: 'ID do item',
   id_kit: 'Número do kit',
-  id_pessoa: 'ID da pessoa',
+  id_pessoa: 'ID de cadastro',
   id_triagem: 'Número da triagem',
   nome_doador: 'Doador',
   nome_funcionario: 'Colaborador responsável',
@@ -138,7 +138,10 @@ function ResourcePage({ config }) {
 
   function startEditing(row) {
     const fields = config.editFields || config.fields;
-    setForm(Object.fromEntries(fields.map(({ name, type }) => [name, getInputValue(row[name], type)])));
+    setForm(Object.fromEntries(fields.map(({ name, type, options }) => {
+      const value = getInputValue(row[name], type);
+      return [name, type === 'select' && options && !options.includes(value) ? 'Outro' : value];
+    })));
     setEditingId(row[config.idField]);
     setMessage('');
     setError('');
@@ -240,6 +243,13 @@ function ResourcePage({ config }) {
         {field.label}
         {field.type === 'textarea' ? (
           <textarea {...commonProps} rows="3" />
+        ) : field.type === 'select' ? (
+          <select {...commonProps}>
+            <option value="">{field.placeholder || 'Selecione'}</option>
+            {field.options.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
         ) : (
           <input {...commonProps} type={field.type || 'text'} />
         )}
