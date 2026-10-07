@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import "./index.css";
+import { Baby, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import PortalLayout from "../../layout/PortalLayout";
 
 function Pregnants() {
   const [gestantes, setGestantes] = useState([]);
@@ -141,34 +142,31 @@ function Pregnants() {
   };
 
   return (
-    <div className="pagina">
-      <header className="cabecalho">
-        <div>
-          <h1>DorcasGestão</h1>
-          <p>Sistema de Gestão da ONG Projeto Dorcas</p>
-        </div>
-      </header>
-
-      <main className="container">
-        <section className="titulo-pagina">
-          <h2>Cadastro de Gestantes</h2>
-          <p>
-            Cadastre e gerencie as informações das gestantes atendidas pela
-            instituição.
-          </p>
+    <PortalLayout active="gestantes" contentClassName="management-content">
+        <section className="management-heading">
+          <p className="home-eyebrow">ACOLHIMENTO MATERNO</p>
+          <h1>Cadastro de <span>gestantes</span></h1>
+          <p>Cadastre e acompanhe as informações das gestantes atendidas pela instituição.</p>
         </section>
 
-        <section className="card">
-          <div className="card-titulo">
-            <h3>{editando ? "Editar Gestante" : "Nova Gestante"}</h3>
+        <section className="management-panel">
+          <div className="management-panel-heading">
+            <div className="management-panel-title">
+              <span className="management-panel-icon"><Baby size={20} /></span>
+              <div>
+                <h2>{editando ? "Editar gestante" : "Nova gestante"}</h2>
+                <p>Dados de acompanhamento e previsão de parto.</p>
+              </div>
+            </div>
           </div>
 
           <form onSubmit={cadastrar}>
-            <div className="form-grid">
+            <div className="management-form-grid">
               <div className="campo">
-                <label>ID da Pessoa</label>
+                <label htmlFor="pregnant-person-id">ID da pessoa</label>
 
                 <input
+                  id="pregnant-person-id"
                   type="number"
                   name="id_pessoa"
                   value={formulario.id_pessoa}
@@ -179,9 +177,10 @@ function Pregnants() {
               </div>
 
               <div className="campo">
-                <label>DPP</label>
+                <label htmlFor="pregnant-due-date">Data provável do parto</label>
 
                 <input
+                  id="pregnant-due-date"
                   type="date"
                   name="dpp"
                   value={formulario.dpp}
@@ -190,9 +189,10 @@ function Pregnants() {
               </div>
 
               <div className="campo">
-                <label>Grau de Vulnerabilidade</label>
+                <label htmlFor="pregnant-vulnerability">Grau de vulnerabilidade</label>
 
                 <select
+                  id="pregnant-vulnerability"
                   name="grau_vulnerabilidade"
                   value={formulario.grau_vulnerabilidade}
                   onChange={handleChange}
@@ -208,9 +208,10 @@ function Pregnants() {
               </div>
 
               <div className="campo">
-                <label>Data de Cadastro</label>
+                <label htmlFor="pregnant-registration-date">Data de cadastro</label>
 
                 <input
+                  id="pregnant-registration-date"
                   type="date"
                   name="data_cadastro"
                   value={formulario.data_cadastro}
@@ -219,9 +220,10 @@ function Pregnants() {
               </div>
 
               <div className="campo">
-                <label>Situação</label>
+                <label htmlFor="pregnant-status">Situação</label>
 
                 <select
+                  id="pregnant-status"
                   name="situacao"
                   value={formulario.situacao}
                   onChange={handleChange}
@@ -235,8 +237,9 @@ function Pregnants() {
               </div>
             </div>
 
-            <div className="botoes">
-              <button type="submit" className="btn btn-principal">
+            <div className="management-actions">
+              <button type="submit" className="management-button management-button--primary">
+                {editando ? <Save size={15} /> : <Plus size={15} />}
                 {editando ? "Atualizar" : "Cadastrar"}
               </button>
 
@@ -244,8 +247,9 @@ function Pregnants() {
                 <button
                   type="button"
                   onClick={limparFormulario}
-                  className="btn btn-cancelar"
+                  className="management-button management-button--secondary"
                 >
+                  <X size={15} />
                   Cancelar
                 </button>
               )}
@@ -253,18 +257,18 @@ function Pregnants() {
           </form>
         </section>
 
-        <section className="card">
-          <div className="card-titulo tabela-titulo">
+        <section className="management-panel">
+          <div className="management-panel-heading">
             <div>
-              <h3>Gestantes cadastradas</h3>
+              <h2>Gestantes cadastradas</h2>
               <p>Lista de gestantes registradas no sistema.</p>
             </div>
 
-            <span className="contador">{gestantes.length} registro(s)</span>
+            <span className="management-count">{gestantes.length} registro(s)</span>
           </div>
 
-          <div className="tabela-container">
-            <table>
+          <div className="management-table-wrap">
+            <table className="management-table">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -281,7 +285,7 @@ function Pregnants() {
               <tbody>
                 {gestantes.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="sem-registros">
+                    <td colSpan="8" className="management-empty">
                       Nenhuma gestante cadastrada.
                     </td>
                   </tr>
@@ -297,7 +301,7 @@ function Pregnants() {
                       <td>{gestante.dpp.substring(0, 10)}</td>
 
                       <td>
-                        <span className="vulnerabilidade">
+                        <span className="management-vulnerability">
                           {gestante.grau_vulnerabilidade}
                         </span>
                       </td>
@@ -306,25 +310,27 @@ function Pregnants() {
 
                       <td>
                         <span
-                          className={`situacao ${gestante.situacao.toLowerCase()}`}
+                          className={`management-status management-status--${gestante.situacao.toLowerCase()}`}
                         >
                           {gestante.situacao}
                         </span>
                       </td>
 
                       <td>
-                        <div className="acoes">
+                        <div className="management-row-actions">
                           <button
                             onClick={() => editar(gestante)}
-                            className="btn-editar"
+                            className="management-button btn-editar"
                           >
+                            <Pencil size={13} />
                             Editar
                           </button>
 
                           <button
                             onClick={() => excluir(gestante.id_pessoa)}
-                            className="btn-excluir"
+                            className="management-button btn-excluir"
                           >
+                            <Trash2 size={13} />
                             Excluir
                           </button>
                         </div>
@@ -336,12 +342,7 @@ function Pregnants() {
             </table>
           </div>
         </section>
-      </main>
-
-      <footer>
-        <p>DorcasGestão © 2026 - Projeto Dorcas</p>
-      </footer>
-    </div>
+    </PortalLayout>
   );
 }
 

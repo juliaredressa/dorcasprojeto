@@ -1,5 +1,6 @@
 import { ArrowRight, ArrowUpRight, Heart, PackageOpen, Sparkles, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import PortalLayout from '../../layout/PortalLayout';
 import './Home.css';
 
 const areas = [
@@ -25,26 +26,7 @@ const areas = [
 
 function Home() {
   return (
-    <div className="home-page">
-      <header className="home-topbar">
-        <Link className="home-brand" to="/" aria-label="Dorcas, página inicial">
-          <span className="home-brand-mark"><Heart size={19} fill="currentColor" strokeWidth={1.8} /></span>
-          <span className="home-brand-copy">
-            <strong>Dorcas</strong>
-            <small>gestão com cuidado</small>
-          </span>
-        </Link>
-
-        <nav className="home-nav" aria-label="Navegação principal">
-          <Link className="home-nav-link home-nav-link--active" to="/">Início</Link>
-          <Link className="home-nav-link" to="/gestante">Gestantes</Link>
-          <Link className="home-nav-link" to="/produtos">Produtos</Link>
-        </nav>
-
-        <span className="home-topbar-note"><span aria-hidden="true" /> Projeto Dorcas</span>
-      </header>
-
-      <main className="home-main">
+    <PortalLayout active="home">
         <section className="home-welcome" aria-labelledby="home-title">
           <div className="home-welcome-copy">
             <p className="home-eyebrow"><Sparkles size={15} /> PORTAL DE CUIDADO</p>
@@ -99,12 +81,7 @@ function Home() {
           </div>
         </section>
 
-        <footer className="home-footer">
-          <span><Heart size={13} fill="currentColor" /> Projeto Dorcas</span>
-          <span>Cuidado, respeito e dignidade.</span>
-        </footer>
-      </main>
-    </div>
+    </PortalLayout>
   );
 }
 
