@@ -87,6 +87,63 @@
   background: rgba(249, 231, 236, 0.8);
 }
 
+.home-nav-more {
+  position: relative;
+  color: var(--home-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.home-nav-more summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.home-nav-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-nav-more summary:hover,
+.home-nav-more--active summary,
+.home-nav-more[open] summary {
+  color: var(--home-pink-dark);
+  background: rgba(249, 231, 236, 0.8);
+}
+
+.home-nav-menu {
+  min-width: 205px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+  border: 1px solid var(--home-border);
+  border-radius: 5px;
+  background: #fffdfd;
+  box-shadow: 0 12px 30px rgba(64, 35, 52, 0.13);
+}
+
+.home-nav-menu a {
+  padding: 9px 10px;
+  border-radius: 4px;
+  color: var(--home-muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.home-nav-menu a:hover,
+.home-nav-menu a[aria-current='page'] {
+  color: var(--home-pink-dark);
+  background: #fff0f4;
+}
+
 .home-topbar-note {
   display: inline-flex;
   align-items: center;
@@ -317,7 +374,7 @@
 
 .home-access-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -348,6 +405,21 @@
 
 .home-access-card--produtos {
   background: linear-gradient(110deg, #f5f3ed 0%, #fffaf8 100%);
+}
+
+.home-access-card--colaboradores,
+.home-access-card--kits {
+  background: linear-gradient(110deg, #f8eff9 0%, #fff9fc 100%);
+}
+
+.home-access-card--doacoes,
+.home-access-card--triagem {
+  background: linear-gradient(110deg, #fff0f3 0%, #fff9f8 100%);
+}
+
+.home-access-card--estoque,
+.home-access-card--fila {
+  background: linear-gradient(110deg, #f1f3ed 0%, #fffaf8 100%);
 }
 
 .home-card-icon {
@@ -474,6 +546,14 @@
     font-size: 11px;
   }
 
+  .home-nav-more {
+    font-size: 11px;
+  }
+
+  .home-nav-more summary {
+    padding: 9px 8px;
+  }
+
   .home-topbar-note {
     display: none;
   }
@@ -520,7 +600,7 @@
   }
 
   .home-access-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
 
@@ -570,8 +650,21 @@
     font-size: 10px;
   }
 
+  .home-nav-more summary {
+    padding-inline: 6px;
+    font-size: 10px;
+  }
+
+  .home-nav-menu {
+    right: -4px;
+  }
+
   .home-welcome h1 {
     font-size: 37px;
+  }
+
+  .home-access-grid {
+    grid-template-columns: 1fr;
   }
 
   .home-footer {

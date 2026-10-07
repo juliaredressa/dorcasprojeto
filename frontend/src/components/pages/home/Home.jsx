@@ -1,4 +1,16 @@
-import { ArrowRight, ArrowUpRight, Heart, PackageOpen, Sparkles, UsersRound } from 'lucide-react';
+import {
+  ArrowDownToLine,
+  ArrowLeftRight,
+  ArrowRight,
+  ArrowUpRight,
+  ClipboardCheck,
+  Gift,
+  HandHeart,
+  Heart,
+  PackageOpen,
+  Sparkles,
+  UsersRound,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PortalLayout from '../../layout/PortalLayout';
 import './Home.css';
@@ -21,6 +33,60 @@ const areas = [
     icon: PackageOpen,
     className: 'home-access-card--produtos',
     action: 'Acessar produtos',
+  },
+  {
+    title: 'Colaboradores',
+    description: 'Mantenha os dados da equipe que acolhe e acompanha as famílias.',
+    eyebrow: 'EQUIPE E ATENDIMENTO',
+    href: '/colaboradores',
+    icon: UsersRound,
+    className: 'home-access-card--colaboradores',
+    action: 'Acessar colaboradores',
+  },
+  {
+    title: 'Doações',
+    description: 'Registre doações recebidas e os itens que entram no estoque.',
+    eyebrow: 'GESTOS DE SOLIDARIEDADE',
+    href: '/doacoes',
+    icon: HandHeart,
+    className: 'home-access-card--doacoes',
+    action: 'Acessar doações',
+  },
+  {
+    title: 'Estoque',
+    description: 'Registre entradas e retiradas de itens para manter as quantidades atualizadas.',
+    eyebrow: 'ENTRADAS E SAÍDAS',
+    href: '/estoque',
+    icon: ArrowLeftRight,
+    className: 'home-access-card--estoque',
+    action: 'Movimentar estoque',
+  },
+  {
+    title: 'Fila de prioridade',
+    description: 'Organize as posições das gestantes priorizadas pelo atendimento.',
+    eyebrow: 'ACOMPANHAMENTO PRIORITÁRIO',
+    href: '/fila-prioridade',
+    icon: ArrowDownToLine,
+    className: 'home-access-card--fila',
+    action: 'Acessar fila',
+  },
+  {
+    title: 'Kits maternidade',
+    description: 'Monte kits com itens disponíveis e acompanhe as entregas.',
+    eyebrow: 'PREPARO E ENTREGA',
+    href: '/kits',
+    icon: Gift,
+    className: 'home-access-card--kits',
+    action: 'Acessar kits',
+  },
+  {
+    title: 'Triagens sociais',
+    description: 'Registre avaliações e acompanhe as necessidades identificadas.',
+    eyebrow: 'ESCUTA E ACOMPANHAMENTO',
+    href: '/triagem',
+    icon: ClipboardCheck,
+    className: 'home-access-card--triagem',
+    action: 'Acessar triagens',
   },
 ];
 

@@ -1,7 +1,8 @@
-import { Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronDown, Heart } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import '../pages/home/Home.css';
 import './management.css';
+import { moduleConfig, moduleRoutes } from '../pages/modules/moduleConfig';
 
 const navigation = [
   { label: 'Início', href: '/', key: 'home' },
@@ -10,6 +11,9 @@ const navigation = [
 ];
 
 function PortalLayout({ active, children, contentClassName = '' }) {
+  const location = useLocation();
+  const activeModule = moduleRoutes.some(({ href }) => href === location.pathname);
+
   return (
     <div className="home-page">
       <header className="home-topbar">
@@ -32,6 +36,18 @@ function PortalLayout({ active, children, contentClassName = '' }) {
               {label}
             </Link>
           ))}
+          <details className={`home-nav-more${activeModule ? ' home-nav-more--active' : ''}`}>
+            <summary aria-label="Abrir outras áreas">
+              Mais áreas <ChevronDown aria-hidden="true" size={13} />
+            </summary>
+            <div className="home-nav-menu">
+              {moduleRoutes.map(({ key, href }) => (
+                <Link aria-current={active === key ? 'page' : undefined} key={key} to={href}>
+                  {moduleConfig[key].title}
+                </Link>
+              ))}
+            </div>
+          </details>
         </nav>
 
         <span className="home-topbar-note"><span aria-hidden="true" /> Projeto Dorcas</span>
