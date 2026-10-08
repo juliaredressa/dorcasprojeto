@@ -1,5 +1,37 @@
 const pool = require("../databasePool");
 
+const cargosPermitidos = [
+    "Administrador(a)",
+    "Assistente social",
+    "Auxiliar administrativo(a)",
+    "Coordenador(a)",
+    "Educador(a) social",
+    "Psicólogo(a)",
+    "Recepcionista",
+    "Outro"
+];
+
+const cpfValido = (cpf) => {
+    const valor = String(cpf || "").trim();
+    const formatoValido = /^\d{11}$/.test(valor) || /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(valor);
+    const digitos = valor.replace(/\D/g, "");
+
+    if (!formatoValido || digitos.length !== 11 || /^(\d)\1{10}$/.test(digitos)) {
+        return false;
+    }
+
+    const calcularDigito = (base, pesoInicial) => {
+        const soma = base
+            .split("")
+            .reduce((total, digito, indice) => total + Number(digito) * (pesoInicial - indice), 0);
+        const resto = (soma * 10) % 11;
+        return resto === 10 ? 0 : resto;
+    };
+
+    return calcularDigito(digitos.slice(0, 9), 10) === Number(digitos[9]) &&
+        calcularDigito(digitos.slice(0, 10), 11) === Number(digitos[10]);
+};
+
 // LISTAR
 const listarColaboradores = async (req, res) => {
 
@@ -14,7 +46,6 @@ const listarColaboradores = async (req, res) => {
                 p.email,
                 p.endereco,
                 f.cargo,
-                f.matricula,
                 f.data_admissao
             FROM funcionario f
             INNER JOIN pessoa p
@@ -50,7 +81,6 @@ const buscarColaborador = async (req, res) => {
                 p.email,
                 p.endereco,
                 f.cargo,
-                f.matricula,
                 f.data_admissao
             FROM funcionario f
             INNER JOIN pessoa p
@@ -89,7 +119,6 @@ const cadastrarColaborador = async (req, res) => {
         email,
         endereco,
         cargo,
-        matricula,
         data_admissao
     } = req.body;
 
@@ -97,11 +126,22 @@ const cadastrarColaborador = async (req, res) => {
         !nome ||
         !cpf ||
         !cargo ||
-        !matricula ||
         !data_admissao
     ) {
         return res.status(400).json({
-            mensagem: "Nome, CPF, cargo, matrícula e data de admissão são obrigatórios."
+            mensagem: "Nome, CPF, cargo e data de admissão são obrigatórios."
+        });
+    }
+
+    if (!cpfValido(cpf)) {
+        return res.status(400).json({
+            mensagem: "Informe um CPF válido."
+        });
+    }
+
+    if (!cargosPermitidos.includes(cargo.trim())) {
+        return res.status(400).json({
+            mensagem: "Selecione um cargo válido."
         });
     }
 
@@ -127,6 +167,7 @@ const cadastrarColaborador = async (req, res) => {
         );
 
         const idPessoa = pessoa.insertId;
+        const matriculaInterna = `COL-${idPessoa}`;
 
         await conexao.query(
             `
@@ -137,7 +178,7 @@ const cadastrarColaborador = async (req, res) => {
             [
                 idPessoa,
                 cargo.trim(),
-                matricula.trim(),
+                matriculaInterna,
                 data_admissao
             ]
         );
@@ -157,7 +198,7 @@ const cadastrarColaborador = async (req, res) => {
 
         if (erro.code === "ER_DUP_ENTRY") {
             return res.status(409).json({
-                mensagem: "CPF ou matrícula já cadastrados."
+                mensagem: "Já existe um colaborador cadastrado com este CPF."
             });
         }
 
@@ -182,7 +223,6 @@ const atualizarColaborador = async (req, res) => {
         email,
         endereco,
         cargo,
-        matricula,
         data_admissao
     } = req.body;
 
@@ -190,11 +230,22 @@ const atualizarColaborador = async (req, res) => {
         !nome ||
         !cpf ||
         !cargo ||
-        !matricula ||
         !data_admissao
     ) {
         return res.status(400).json({
-            mensagem: "Nome, CPF, cargo, matrícula e data de admissão são obrigatórios."
+            mensagem: "Nome, CPF, cargo e data de admissão são obrigatórios."
+        });
+    }
+
+    if (!cpfValido(cpf)) {
+        return res.status(400).json({
+            mensagem: "Informe um CPF válido."
+        });
+    }
+
+    if (!cargosPermitidos.includes(cargo.trim())) {
+        return res.status(400).json({
+            mensagem: "Selecione um cargo válido."
         });
     }
 
@@ -209,13 +260,11 @@ const atualizarColaborador = async (req, res) => {
             UPDATE funcionario
             SET
                 cargo = ?,
-                matricula = ?,
                 data_admissao = ?
             WHERE id_pessoa = ?
             `,
             [
                 cargo.trim(),
-                matricula.trim(),
                 data_admissao,
                 req.params.id
             ]
@@ -265,7 +314,7 @@ const atualizarColaborador = async (req, res) => {
 
         if (erro.code === "ER_DUP_ENTRY") {
             return res.status(409).json({
-                mensagem: "CPF ou matrícula já cadastrados."
+                mensagem: "Já existe uma pessoa cadastrada com este CPF."
             });
         }
 

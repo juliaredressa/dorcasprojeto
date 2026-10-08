@@ -65,7 +65,7 @@ module.exports = {
       },
       post: {
         tags: ['Gestantes'],
-        summary: 'Cadastra uma gestante para uma pessoa existente',
+        summary: 'Cadastra uma pessoa e sua gestação com identificador automático',
         requestBody: { $ref: '#/components/requestBodies/GestanteCadastro' },
         responses: {
           201: {
@@ -73,7 +73,7 @@ module.exports = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/ResultadoGestante' } } }
           },
           400: { $ref: '#/components/responses/ErroRequisicao' },
-          404: { $ref: '#/components/responses/NaoEncontrado' },
+          409: { $ref: '#/components/responses/Conflito' },
           500: { $ref: '#/components/responses/ErroServidor' }
         }
       }
@@ -111,6 +111,7 @@ module.exports = {
           },
           400: { $ref: '#/components/responses/ErroRequisicao' },
           404: { $ref: '#/components/responses/NaoEncontrado' },
+          409: { $ref: '#/components/responses/Conflito' },
           500: { $ref: '#/components/responses/ErroServidor' }
         }
       },
@@ -226,7 +227,6 @@ module.exports = {
           id_pessoa: { type: 'integer' },
           nome: { type: 'string' },
           cpf: { type: 'string' },
-          data_nascimento: { type: 'string', format: 'date' },
           telefone: { type: 'string' },
           endereco: { type: 'string' },
           dpp: { type: 'string', format: 'date' },
@@ -237,9 +237,12 @@ module.exports = {
       },
       GestanteCadastro: {
         type: 'object',
-        required: ['id_pessoa', 'dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
+        required: ['nome', 'cpf', 'dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
         properties: {
-          id_pessoa: { type: 'integer', example: 1 },
+          nome: { type: 'string', maxLength: 150, example: 'Maria da Silva' },
+          cpf: { type: 'string', maxLength: 14, example: '123.456.789-00' },
+          telefone: { type: 'string', maxLength: 20, nullable: true },
+          endereco: { type: 'string', maxLength: 255, nullable: true },
           dpp: { type: 'string', format: 'date', example: '2026-12-15' },
           grau_vulnerabilidade: { type: 'integer', minimum: 1, maximum: 5, example: 3 },
           data_cadastro: { type: 'string', format: 'date', example: '2026-09-29' },
@@ -248,8 +251,12 @@ module.exports = {
       },
       GestanteAtualizacao: {
         type: 'object',
-        required: ['dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
+        required: ['nome', 'cpf', 'dpp', 'grau_vulnerabilidade', 'data_cadastro', 'situacao'],
         properties: {
+          nome: { type: 'string', maxLength: 150, example: 'Maria da Silva' },
+          cpf: { type: 'string', maxLength: 14, example: '123.456.789-00' },
+          telefone: { type: 'string', maxLength: 20, nullable: true },
+          endereco: { type: 'string', maxLength: 255, nullable: true },
           dpp: { type: 'string', format: 'date', example: '2026-12-15' },
           grau_vulnerabilidade: { type: 'integer', minimum: 1, maximum: 5, example: 3 },
           data_cadastro: { type: 'string', format: 'date', example: '2026-09-29' },
@@ -289,6 +296,7 @@ module.exports = {
       ResultadoGestante: {
         type: 'object',
         properties: {
+          id_pessoa: { type: 'integer', description: 'Gerado automaticamente pelo banco de dados.' },
           mensagem: { type: 'string' }
         }
       },
@@ -450,11 +458,32 @@ Object.assign(module.exports.paths, {
     post: {
       tags: ['Doações'],
       summary: 'Registra uma doação e atualiza o estoque',
-      requestBody: requestBodyRef('Doacao'),
+      requestBody: requestBodyRef('DoacaoInput'),
       responses: {
         201: jsonResponse('Doação cadastrada.', schemaRef('ResultadoDoacao')),
         400: responseRef('ErroRequisicao'),
         404: responseRef('NaoEncontrado'),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
+  '/api/doacoes/itens-disponiveis': {
+    get: {
+      tags: ['Doações'],
+      summary: 'Lista itens com estoque disponível para selecionar na doação',
+      responses: {
+        200: jsonResponse('Itens disponíveis encontrados.', {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id_item: { type: 'integer' },
+              nome_item: { type: 'string' },
+              unidade_medida: { type: 'string' },
+              quantidade_atual: { type: 'integer', minimum: 1 }
+            }
+          }
+        }),
         500: responseRef('ErroServidor')
       }
     }
@@ -595,16 +624,18 @@ Object.assign(module.exports.components.schemas, {
   },
   Colaborador: {
     type: 'object',
-    required: ['nome', 'cpf', 'cargo', 'matricula', 'data_admissao'],
+    required: ['nome', 'cpf', 'cargo', 'data_admissao'],
     properties: {
-      id_pessoa: { type: 'integer' },
+      id_pessoa: { type: 'integer', readOnly: true, description: 'ID de cadastro gerado automaticamente.' },
       nome: { type: 'string' },
       cpf: { type: 'string' },
       telefone: { type: 'string', nullable: true },
       email: { type: 'string', format: 'email', nullable: true },
       endereco: { type: 'string', nullable: true },
-      cargo: { type: 'string' },
-      matricula: { type: 'string' },
+      cargo: {
+        type: 'string',
+        enum: ['Administrador(a)', 'Assistente social', 'Auxiliar administrativo(a)', 'Coordenador(a)', 'Educador(a) social', 'Psicólogo(a)', 'Recepcionista', 'Outro']
+      },
       data_admissao: { type: 'string', format: 'date' }
     }
   },
@@ -613,8 +644,6 @@ Object.assign(module.exports.components.schemas, {
     properties: {
       id_doacao: { type: 'integer' },
       data_doacao: { type: 'string', format: 'date' },
-      id_doador: { type: 'integer' },
-      nome_doador: { type: 'string' },
       id_funcionario: { type: 'integer' },
       nome_funcionario: { type: 'string' }
     }
@@ -639,10 +668,9 @@ Object.assign(module.exports.components.schemas, {
   },
   DoacaoInput: {
     type: 'object',
-    required: ['data_doacao', 'id_doador', 'id_funcionario', 'itens'],
+    required: ['data_doacao', 'id_funcionario', 'itens'],
     properties: {
       data_doacao: { type: 'string', format: 'date', example: '2026-10-06' },
-      id_doador: { type: 'integer', example: 1 },
       id_funcionario: { type: 'integer', example: 2 },
       itens: { type: 'array', minItems: 1, items: schemaRef('ItemDoacao') }
     }

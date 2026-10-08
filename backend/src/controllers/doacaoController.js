@@ -4,38 +4,88 @@ const {
     adicionarAoEstoque
 } = require("../services/estoqueService");
 
+const listarItensDisponiveis = async (req, res) => {
+    try {
+        const [itens] = await db.promise().query(`
+            SELECT
+                i.id_item,
+                i.nome_item,
+                i.unidade_medida,
+                e.quantidade_atual
+            FROM item_doacao i
+            INNER JOIN estoque e
+                ON e.id_item = i.id_item
+            WHERE e.quantidade_atual > 0
+            ORDER BY i.nome_item
+        `);
+
+        res.json(itens);
+    } catch (erro) {
+        console.error(erro);
+        res.status(500).json({
+            erro: "Erro ao listar itens com estoque disponível."
+        });
+    }
+};
+
 
 // LISTAR TODAS AS DOAÇÕES
-const listarDoacoes = (req, res) => {
-    const sql = `
-        SELECT
-            d.id_doacao,
-            d.data_doacao,
-            d.id_doador,
-            pd.nome AS nome_doador,
-            d.id_funcionario,
-            pf.nome AS nome_funcionario
-        FROM doacao d
-        INNER JOIN doador doad
-            ON d.id_doador = doad.id_pessoa
-        INNER JOIN pessoa pd
-            ON doad.id_pessoa = pd.id_pessoa
-        INNER JOIN funcionario f
-            ON d.id_funcionario = f.id_pessoa
-        INNER JOIN pessoa pf
-            ON f.id_pessoa = pf.id_pessoa
-        ORDER BY d.data_doacao DESC
-    `;
+const listarDoacoes = async (req, res) => {
+    try {
+        const conexao = db.promise();
+        const [doacoes] = await conexao.query(`
+            SELECT
+                d.id_doacao,
+                d.data_doacao,
+                d.id_funcionario,
+                pf.nome AS nome_funcionario
+            FROM doacao d
+            INNER JOIN funcionario f
+                ON d.id_funcionario = f.id_pessoa
+            INNER JOIN pessoa pf
+                ON f.id_pessoa = pf.id_pessoa
+            ORDER BY d.data_doacao DESC
+        `);
 
-    db.query(sql, (erro, resultados) => {
-        if (erro) {
-            return res.status(500).json({
-                erro: "Erro ao listar doações."
-            });
+        if (doacoes.length === 0) {
+            return res.json([]);
         }
 
-        res.json(resultados);
-    });
+        const idsDoacao = doacoes.map(({ id_doacao }) => id_doacao);
+        const [itens] = await conexao.query(`
+            SELECT
+                r.id_doacao,
+                r.id_item,
+                i.nome_item,
+                r.quantidade
+            FROM item_doacao_recebida r
+            INNER JOIN item_doacao i
+                ON r.id_item = i.id_item
+            WHERE r.id_doacao IN (?)
+            ORDER BY i.nome_item
+        `, [idsDoacao]);
+
+        const itensPorDoacao = new Map();
+        for (const item of itens) {
+            const itensDoacao = itensPorDoacao.get(item.id_doacao) || [];
+            itensDoacao.push({
+                id_item: item.id_item,
+                nome_item: item.nome_item,
+                quantidade: item.quantidade
+            });
+            itensPorDoacao.set(item.id_doacao, itensDoacao);
+        }
+
+        res.json(doacoes.map((doacao) => ({
+            ...doacao,
+            itens: itensPorDoacao.get(doacao.id_doacao) || []
+        })));
+    } catch (erro) {
+        console.error(erro);
+        res.status(500).json({
+            erro: "Erro ao listar doações."
+        });
+    }
 };
 
 
@@ -47,15 +97,9 @@ const buscarDoacao = (req, res) => {
         SELECT
             d.id_doacao,
             d.data_doacao,
-            d.id_doador,
-            pd.nome AS nome_doador,
             d.id_funcionario,
             pf.nome AS nome_funcionario
         FROM doacao d
-        INNER JOIN doador doad
-            ON d.id_doador = doad.id_pessoa
-        INNER JOIN pessoa pd
-            ON doad.id_pessoa = pd.id_pessoa
         INNER JOIN funcionario f
             ON d.id_funcionario = f.id_pessoa
         INNER JOIN pessoa pf
@@ -107,14 +151,12 @@ const buscarDoacao = (req, res) => {
 const cadastrarDoacao = async (req, res) => {
     const {
         data_doacao,
-        id_doador,
         id_funcionario,
         itens
     } = req.body;
 
     if (
         !data_doacao ||
-        !id_doador ||
         !id_funcionario ||
         !Array.isArray(itens) ||
         itens.length === 0
@@ -141,24 +183,6 @@ const cadastrarDoacao = async (req, res) => {
     try {
         await conexao.beginTransaction();
 
-        // VERIFICAR DOADOR
-        const [doadores] = await conexao.query(
-            `
-            SELECT id_pessoa
-            FROM doador
-            WHERE id_pessoa = ?
-            `,
-            [id_doador]
-        );
-
-        if (doadores.length === 0) {
-            await conexao.rollback();
-
-            return res.status(404).json({
-                erro: "Doador não encontrado."
-            });
-        }
-
         // VERIFICAR FUNCIONÁRIO
         const [funcionarios] = await conexao.query(
             `
@@ -183,14 +207,12 @@ const cadastrarDoacao = async (req, res) => {
             INSERT INTO doacao
             (
                 data_doacao,
-                id_doador,
                 id_funcionario
             )
-            VALUES (?, ?, ?)
+            VALUES (?, ?)
             `,
             [
                 data_doacao,
-                id_doador,
                 id_funcionario
             ]
         );
@@ -351,6 +373,7 @@ const excluirDoacao = async (req, res) => {
 
 
 module.exports = {
+    listarItensDisponiveis,
     listarDoacoes,
     buscarDoacao,
     cadastrarDoacao,
