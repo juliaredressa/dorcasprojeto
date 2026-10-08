@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { PackageOpen, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import PortalLayout from "../../layout/PortalLayout";
 
 const API = "http://localhost:3000/api";
 
@@ -37,7 +39,7 @@ function Products() {
       setCategorias(await resCategorias.json());
     } catch {
       setErro(
-        "Não foi possível carregar os dados. Verifique se o backend está ligado.",
+        "Não foi possível carregar produtos e categorias. Verifique a API e a conexão com o banco de dados.",
       );
     }
   }
@@ -160,20 +162,30 @@ function Products() {
   }
 
   return (
-    <main className="pagina">
-      <header>
-        <h1>Projeto Dorcas</h1>
-        <p>Cadastro de produtos para doação</p>
-      </header>
+    <PortalLayout active="produtos" contentClassName="management-content">
+      <section className="management-heading">
+        <p className="home-eyebrow">DOAÇÕES E ESTOQUE</p>
+        <h1>Cadastro de <span>produtos</span></h1>
+        <p>Organize os itens, categorias e quantidades mínimas para apoiar as doações.</p>
+      </section>
 
-      <section className="card">
-        <h2>{editando ? "Editar produto" : "Novo produto"}</h2>
+      <section className="management-panel">
+        <div className="management-panel-heading">
+          <div className="management-panel-title">
+            <span className="management-panel-icon"><PackageOpen size={20} /></span>
+            <div>
+              <h2>{editando ? "Editar produto" : "Novo produto"}</h2>
+              <p>Informações para identificar e acompanhar cada item.</p>
+            </div>
+          </div>
+        </div>
 
-        <form onSubmit={salvar}>
-          <div className="campos">
-            <label>
+        <form className="management-form" onSubmit={salvar}>
+          <div className="management-form-grid management-form-grid--products">
+            <label className="management-field" htmlFor="product-name">
               Nome do produto
               <input
+                id="product-name"
                 name="nome_item"
                 value={form.nome_item}
                 onChange={alterarCampo}
@@ -181,9 +193,10 @@ function Products() {
               />
             </label>
 
-            <label>
+            <label className="management-field" htmlFor="product-size">
               Tamanho
               <input
+                id="product-size"
                 name="tamanho"
                 value={form.tamanho}
                 onChange={alterarCampo}
@@ -191,9 +204,10 @@ function Products() {
               />
             </label>
 
-            <label>
+            <label className="management-field" htmlFor="product-unit">
               Unidade de medida
               <input
+                id="product-unit"
                 name="unidade_medida"
                 value={form.unidade_medida}
                 onChange={alterarCampo}
@@ -201,9 +215,10 @@ function Products() {
               />
             </label>
 
-            <label>
+            <label className="management-field" htmlFor="product-minimum">
               Quantidade mínima
               <input
+                id="product-minimum"
                 type="number"
                 min="1"
                 step="1"
@@ -213,9 +228,10 @@ function Products() {
               />
             </label>
 
-            <label>
+            <label className="management-field" htmlFor="product-category">
               Categoria
               <select
+                id="product-category"
                 name="id_categoria"
                 value={form.id_categoria}
                 onChange={alterarCampo}
@@ -234,36 +250,44 @@ function Products() {
             </label>
           </div>
 
-          <div className="acoes-form">
-            <button type="submit">
+          <div className="management-actions">
+            <button className="management-button management-button--primary" type="submit">
+              {editando ? <Save size={15} /> : <Plus size={15} />}
               {editando ? "Salvar alterações" : "Cadastrar"}
             </button>
 
             {editando && (
               <button
                 type="button"
-                className="secundario"
+                className="management-button management-button--secondary"
                 onClick={cancelarEdicao}
               >
+                <X size={15} />
                 Cancelar
               </button>
             )}
           </div>
         </form>
 
-        {erro && <p className="aviso erro">{erro}</p>}
+        {erro && <p aria-live="polite" className="management-notice management-notice--error">{erro}</p>}
 
-        {mensagem && <p className="aviso sucesso">{mensagem}</p>}
+        {mensagem && <p aria-live="polite" className="management-notice management-notice--success">{mensagem}</p>}
       </section>
 
-      <section className="card">
-        <h2>Produtos cadastrados</h2>
+      <section className="management-panel">
+        <div className="management-panel-heading">
+          <div>
+            <h2>Produtos cadastrados</h2>
+            <p>Catálogo de itens disponíveis para doação.</p>
+          </div>
+          <span className="management-count">{produtos.length} produto(s)</span>
+        </div>
 
         {produtos.length === 0 ? (
-          <p className="vazio">Nenhum produto cadastrado.</p>
+          <p className="management-empty">Nenhum produto cadastrado.</p>
         ) : (
-          <div className="tabela-wrap">
-            <table>
+          <div className="management-table-wrap">
+            <table className="management-table">
               <thead>
                 <tr>
                   <th>Produto</th>
@@ -284,20 +308,24 @@ function Products() {
                     <td>{produto.quantidade_minima}</td>
                     <td>{produto.nome_categoria}</td>
 
-                    <td className="acoes">
+                    <td>
+                      <div className="management-row-actions">
                       <button
-                        className="editar"
+                        className="management-button btn-editar"
                         onClick={() => editar(produto)}
                       >
+                        <Pencil size={13} />
                         Editar
                       </button>
 
                       <button
-                        className="excluir"
+                        className="management-button btn-excluir"
                         onClick={() => excluir(produto.id_item)}
                       >
+                        <Trash2 size={13} />
                         Excluir
                       </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -306,7 +334,7 @@ function Products() {
           </div>
         )}
       </section>
-    </main>
+    </PortalLayout>
   );
 }
 

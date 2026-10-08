@@ -111,7 +111,7 @@ CREATE TABLE estoque (
 CREATE TABLE doacao (
     id_doacao INT NOT NULL AUTO_INCREMENT,
     data_doacao DATE NOT NULL,
-    id_doador INT NOT NULL,
+    id_doador INT NULL,
     id_funcionario INT NOT NULL,
     PRIMARY KEY (id_doacao),
     CONSTRAINT fk_doacao_doador
@@ -176,4 +176,16 @@ CREATE TABLE alerta_estoque (
     PRIMARY KEY (id_alerta),
     CONSTRAINT fk_alerta_item
         FOREIGN KEY (id_item) REFERENCES item_doacao(id_item)
+) ENGINE=InnoDB;
+
+CREATE TABLE usuario (
+    id_usuario INT NOT NULL AUTO_INCREMENT,
+    id_funcionario INT NOT NULL,
+    login VARCHAR(100) NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id_usuario),
+    UNIQUE KEY uk_usuario_login (login),
+    CONSTRAINT fk_usuario_funcionario
+        FOREIGN KEY (id_funcionario)
+        REFERENCES funcionario(id_pessoa)
 ) ENGINE=InnoDB;
