@@ -34,14 +34,12 @@ const icons = {
 
 const labelOverrides = {
   id_doacao: 'Número da doação',
-  id_doador: 'ID do doador',
   id_funcionario: 'ID do colaborador',
   id_gestante: 'ID da gestante',
   id_item: 'ID do item',
   id_kit: 'Número do kit',
   id_pessoa: 'ID de cadastro',
   id_triagem: 'Número da triagem',
-  nome_doador: 'Doador',
   nome_funcionario: 'Colaborador responsável',
   nome_gestante: 'Gestante',
   nome_item: 'Item',
@@ -58,6 +56,31 @@ const labelOverrides = {
 function formatDate(value) {
   if (!value) return 'Não informada';
   return String(value).slice(0, 10);
+}
+
+function formatCpf(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  return digits
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2');
+}
+
+function isValidCpf(value) {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+
+  const calculateDigit = (base, initialWeight) => {
+    const sum = [...base].reduce(
+      (total, digit, index) => total + Number(digit) * (initialWeight - index),
+      0,
+    );
+    const remainder = (sum * 10) % 11;
+    return remainder === 10 ? 0 : remainder;
+  };
+
+  return calculateDigit(digits.slice(0, 9), 10) === Number(digits[9])
+    && calculateDigit(digits.slice(0, 10), 11) === Number(digits[10]);
 }
 
 function formatLabel(key) {
@@ -99,11 +122,13 @@ function ResourcePage({ config }) {
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(() => emptyForm(config.fields));
   const [itemRows, setItemRows] = useState([{ id_item: '', quantidade: '' }]);
+  const [selectOptions, setSelectOptions] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(Boolean(config.list));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [optionsError, setOptionsError] = useState('');
   const [message, setMessage] = useState('');
 
   async function loadRows() {
@@ -124,6 +149,49 @@ function ResourcePage({ config }) {
     loadRows();
   }, [config.apiPath]);
 
+  useEffect(() => {
+    let active = true;
+    const optionFields = config.fields.filter((field) => field.optionsApiPath);
+
+    async function loadOptions() {
+      const failures = [];
+      const results = await Promise.all(optionFields.map(async (field) => {
+        try {
+          const data = await request(field.optionsApiPath);
+          if (!Array.isArray(data)) {
+            throw new Error(`A resposta de ${field.label} está inválida.`);
+          }
+          return [field.name, data];
+        } catch (requestError) {
+          failures.push(`${field.label}: ${requestError.message}`);
+          return [field.name, []];
+        }
+      }));
+
+      let availableItems = [];
+      if (config.withItems) {
+        try {
+          availableItems = await request('/doacoes/itens-disponiveis');
+          if (!Array.isArray(availableItems)) {
+            throw new Error('A resposta dos itens está inválida.');
+          }
+        } catch (requestError) {
+          failures.push(`Itens da doação: ${requestError.message}`);
+        }
+      }
+
+      if (active) {
+        setSelectOptions({ ...Object.fromEntries(results), __items: availableItems });
+        setOptionsError(failures.join(' '));
+      }
+    }
+
+    loadOptions();
+    return () => {
+      active = false;
+    };
+  }, [config.apiPath]);
+
   const currentFields = editingId !== null && config.editFields ? config.editFields : config.fields;
 
   function resetForm() {
@@ -133,7 +201,10 @@ function ResourcePage({ config }) {
   }
 
   function setField(name, value) {
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({
+      ...current,
+      [name]: name === 'cpf' ? formatCpf(value) : value,
+    }));
   }
 
   function startEditing(row) {
@@ -151,7 +222,9 @@ function ResourcePage({ config }) {
   function buildPayload() {
     const payload = Object.fromEntries(currentFields.map(({ name, type }) => [
       name,
-      type === 'number' ? Number(form[name]) : form[name],
+      type === 'number' ? Number(form[name])
+        : type === 'resource-select' ? (form[name] ? Number(form[name]) : null)
+          : form[name],
     ]));
 
     if (config.withItems && editingId === null) {
@@ -170,8 +243,14 @@ function ResourcePage({ config }) {
     setError('');
     setMessage('');
 
+    if (currentFields.some((field) => field.name === 'cpf') && !isValidCpf(form.cpf || '')) {
+      setError('Informe um CPF válido.');
+      setSaving(false);
+      return;
+    }
+
     if (config.withItems && editingId === null && itemRows.some((item) => !item.id_item || !item.quantidade || Number(item.quantidade) < 1)) {
-      setError('Informe o ID e uma quantidade maior que zero para cada item.');
+      setError('Selecione um item e informe uma quantidade maior que zero para cada item.');
       setSaving(false);
       return;
     }
@@ -187,6 +266,15 @@ function ResourcePage({ config }) {
       setMessage(data.mensagem || `${config.singular} salvo com sucesso.`);
       resetForm();
       await loadRows();
+      if (config.withItems) {
+        try {
+          const availableItems = await request('/doacoes/itens-disponiveis');
+          setSelectOptions((current) => ({ ...current, __items: availableItems }));
+          setOptionsError('');
+        } catch (requestError) {
+          setOptionsError(`Itens da doação: ${requestError.message}`);
+        }
+      }
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -250,8 +338,28 @@ function ResourcePage({ config }) {
               <option key={option} value={option}>{option}</option>
             ))}
           </select>
+        ) : field.type === 'resource-select' ? (
+          <select {...commonProps} required={Boolean(field.required)}>
+            <option value="">
+              {selectOptions[field.name]?.length
+                ? `Selecione ${field.label.toLowerCase()}`
+                : field.emptyOptionsLabel || `Nenhuma opção disponível`}
+            </option>
+            {(selectOptions[field.name] || []).map((option) => (
+              <option key={option[field.optionValue]} value={option[field.optionValue]}>
+                {option[field.optionLabel]}
+              </option>
+            ))}
+          </select>
         ) : (
-          <input {...commonProps} type={field.type || 'text'} />
+          <input
+            {...commonProps}
+            autoComplete={field.name === 'cpf' ? 'off' : undefined}
+            inputMode={field.name === 'cpf' ? 'numeric' : undefined}
+            maxLength={field.name === 'cpf' ? 14 : undefined}
+            placeholder={field.name === 'cpf' ? '000.000.000-00' : field.placeholder}
+            type={field.type || 'text'}
+          />
         )}
       </label>
     );
@@ -259,6 +367,16 @@ function ResourcePage({ config }) {
 
   function renderCell(row, column) {
     const value = row[column.key];
+    if (column.type === 'items') {
+      if (!Array.isArray(value) || value.length === 0) return '—';
+      return (
+        <ul className="management-table-items">
+          {value.map((item) => (
+            <li key={item.id_item}>{item.nome_item} ({item.quantidade})</li>
+          ))}
+        </ul>
+      );
+    }
     if (value === null || value === undefined || value === '') return '—';
     if (column.type === 'date') return formatDate(value);
     if (column.type === 'status') {
@@ -295,25 +413,50 @@ function ResourcePage({ config }) {
           {config.withItems && editingId === null && (
             <fieldset className="module-items-fieldset">
               <legend>Itens da {config.singular}</legend>
+              {selectOptions.__items?.length === 0 && !optionsError && (
+                <p className="management-empty">
+                  Nenhum produto tem estoque disponível. Registre uma entrada na tela de{' '}
+                  <a href="/estoque">Estoque</a>.
+                </p>
+              )}
               <div className="module-items-list">
-                {itemRows.map((item, index) => (
+                {itemRows.map((item, index) => {
+                  const selectedStockItem = selectOptions.__items?.find(
+                    (option) => String(option.id_item) === item.id_item
+                  );
+                  return (
                   <div className="module-item-row" key={`item-${index}`}>
                     <label className="management-field" htmlFor={`${config.apiPath}-item-${index}`}>
-                      ID do item
-                      <input
+                      Item
+                      <select
                         id={`${config.apiPath}-item-${index}`}
-                        min="1"
                         required
-                        type="number"
                         value={item.id_item}
                         onChange={(event) => updateItem(index, 'id_item', event.target.value)}
-                      />
+                      >
+                                    <option value="">
+                                      {selectOptions.__items?.length
+                                        ? 'Selecione um item'
+                                        : 'Nenhum produto com estoque disponível'}
+                                    </option>
+                        {(selectOptions.__items || []).map((option) => (
+                          <option key={option.id_item} value={option.id_item}>
+                            {option.nome_item} — estoque: {option.quantidade_atual} {option.unidade_medida}
+                          </option>
+                        ))}
+                      </select>
+                      {item.id_item && (
+                        <span className="management-field-help">
+                          Em estoque: {selectedStockItem?.quantidade_atual ?? 0} {selectedStockItem?.unidade_medida}
+                        </span>
+                      )}
                     </label>
                     <label className="management-field" htmlFor={`${config.apiPath}-quantity-${index}`}>
                       Quantidade
                       <input
                         id={`${config.apiPath}-quantity-${index}`}
                         min="1"
+                        max={selectedStockItem?.quantidade_atual}
                         required
                         type="number"
                         value={item.quantidade}
@@ -331,7 +474,8 @@ function ResourcePage({ config }) {
                       <Trash2 size={16} />
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <button
                 className="management-button management-button--secondary module-add-item"
@@ -356,7 +500,11 @@ function ResourcePage({ config }) {
           </div>
         </form>
 
-        {error && <p aria-live="polite" className="management-notice management-notice--error">{error}</p>}
+        {(error || optionsError) && (
+          <p aria-live="polite" className="management-notice management-notice--error">
+            {[error, optionsError].filter(Boolean).join(' ')}
+          </p>
+        )}
         {message && <p aria-live="polite" className="management-notice management-notice--success">{message}</p>}
       </section>
 
@@ -446,7 +594,9 @@ function DetailDialog({ detail, onClose }) {
           {Object.entries(detail).filter(([key]) => key !== 'itens').map(([key, value]) => (
             <div className="module-detail-entry" key={key}>
               <dt>{formatLabel(key)}</dt>
-              <dd>{key.startsWith('data_') ? formatDate(value) : value ?? '—'}</dd>
+              <dd>
+                {key.startsWith('data_') ? formatDate(value) : value ?? '—'}
+              </dd>
             </div>
           ))}
         </dl>
@@ -475,9 +625,34 @@ function DetailDialog({ detail, onClose }) {
 function StockPage({ config }) {
   const [operation, setOperation] = useState('entrada');
   const [form, setForm] = useState({ id_item: '', quantidade: '' });
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProducts() {
+      try {
+        const data = await request('/produtos');
+        if (!Array.isArray(data)) {
+          throw new Error('A lista de produtos recebida é inválida.');
+        }
+        if (active) setProducts(data);
+      } catch (requestError) {
+        if (active) setError(requestError.message);
+      } finally {
+        if (active) setLoadingProducts(false);
+      }
+    }
+
+    loadProducts();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function save(event) {
     event.preventDefault();
@@ -544,15 +719,22 @@ function StockPage({ config }) {
         <form onSubmit={save}>
           <div className="management-form-grid stock-form-grid">
             <label className="management-field" htmlFor="stock-item-id">
-              ID do produto
-              <input
+              Produto
+              <select
                 id="stock-item-id"
-                min="1"
                 required
-                type="number"
                 value={form.id_item}
                 onChange={(event) => setForm((current) => ({ ...current, id_item: event.target.value }))}
-              />
+              >
+                <option value="">
+                  {loadingProducts ? 'Carregando produtos...' : products.length ? 'Selecione um produto' : 'Nenhum produto cadastrado'}
+                </option>
+                {products.map((product) => (
+                  <option key={product.id_item} value={product.id_item}>
+                    {product.nome_item}{product.tamanho ? ` — ${product.tamanho}` : ''} ({product.unidade_medida})
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="management-field" htmlFor="stock-quantity">
               Quantidade

@@ -1,0 +1,2 @@
+ALTER TABLE doacao
+    MODIFY COLUMN id_doador INT NULL;

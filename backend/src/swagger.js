@@ -458,11 +458,32 @@ Object.assign(module.exports.paths, {
     post: {
       tags: ['Doações'],
       summary: 'Registra uma doação e atualiza o estoque',
-      requestBody: requestBodyRef('Doacao'),
+      requestBody: requestBodyRef('DoacaoInput'),
       responses: {
         201: jsonResponse('Doação cadastrada.', schemaRef('ResultadoDoacao')),
         400: responseRef('ErroRequisicao'),
         404: responseRef('NaoEncontrado'),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
+  '/api/doacoes/itens-disponiveis': {
+    get: {
+      tags: ['Doações'],
+      summary: 'Lista itens com estoque disponível para selecionar na doação',
+      responses: {
+        200: jsonResponse('Itens disponíveis encontrados.', {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id_item: { type: 'integer' },
+              nome_item: { type: 'string' },
+              unidade_medida: { type: 'string' },
+              quantidade_atual: { type: 'integer', minimum: 1 }
+            }
+          }
+        }),
         500: responseRef('ErroServidor')
       }
     }
@@ -623,8 +644,6 @@ Object.assign(module.exports.components.schemas, {
     properties: {
       id_doacao: { type: 'integer' },
       data_doacao: { type: 'string', format: 'date' },
-      id_doador: { type: 'integer' },
-      nome_doador: { type: 'string' },
       id_funcionario: { type: 'integer' },
       nome_funcionario: { type: 'string' }
     }
@@ -649,10 +668,9 @@ Object.assign(module.exports.components.schemas, {
   },
   DoacaoInput: {
     type: 'object',
-    required: ['data_doacao', 'id_doador', 'id_funcionario', 'itens'],
+    required: ['data_doacao', 'id_funcionario', 'itens'],
     properties: {
       data_doacao: { type: 'string', format: 'date', example: '2026-10-06' },
-      id_doador: { type: 'integer', example: 1 },
       id_funcionario: { type: 'integer', example: 2 },
       itens: { type: 'array', minItems: 1, items: schemaRef('ItemDoacao') }
     }

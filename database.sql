@@ -111,7 +111,7 @@ CREATE TABLE estoque (
 CREATE TABLE doacao (
     id_doacao INT NOT NULL AUTO_INCREMENT,
     data_doacao DATE NOT NULL,
-    id_doador INT NOT NULL,
+    id_doador INT NULL,
     id_funcionario INT NOT NULL,
     PRIMARY KEY (id_doacao),
     CONSTRAINT fk_doacao_doador

@@ -63,14 +63,21 @@ export const moduleConfig = {
     withItems: true,
     fields: [
       { name: 'data_doacao', label: 'Data da doação', type: 'date', required: true },
-      { name: 'id_doador', label: 'ID do doador', type: 'number', min: 1, required: true },
-      { name: 'id_funcionario', label: 'ID do colaborador responsável', type: 'number', min: 1, required: true },
+      {
+        name: 'id_funcionario',
+        label: 'Colaborador responsável',
+        type: 'resource-select',
+        optionsApiPath: '/colaboradores',
+        optionValue: 'id_pessoa',
+        optionLabel: 'nome',
+        required: true,
+      },
     ],
     columns: [
       { key: 'id_doacao', label: 'Nº' },
       { key: 'data_doacao', label: 'Data', type: 'date' },
-      { key: 'nome_doador', label: 'Doador' },
-      { key: 'nome_funcionario', label: 'Recebido por' },
+      { key: 'nome_funcionario', label: 'Colaborador responsável' },
+      { key: 'itens', label: 'Itens', type: 'items' },
     ],
   },
   estoque: {
