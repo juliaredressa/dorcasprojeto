@@ -18,15 +18,24 @@ const produtoRoutes = require("./routes/produtoRoutes");
 const colaboradorRoutes = require("./routes/colaboradorRoutes");
 const loginRoutes = require("./routes/loginRoutes");
 
+app.use('/gestante', gestanteRoutes);
+
 const app = express();
 
-app.use(
-    cors({
-        origin: "http://localhost:5173",
-        credentials: true
-    })
-);
+const produtosRoutes = require('./routes/produtos');
 
+app.use('/produtos', produtosRoutes);
+
+const colaboradoresRoutes =
+    require('./routes/colaboradores');
+
+app.use('/colaboradores', colaboradoresRoutes);
+
+const authRoutes = require('./routes/auth');
+
+app.use('/auth', authRoutes);
+
+app.use(cors());
 app.use(express.json());
 
 app.use(
@@ -67,6 +76,8 @@ app.use("/api/colaboradores", colaboradorRoutes);
 app.use("/api/login", loginRoutes);
 
 const PORT = process.env.PORT || 3000;
+
+
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
