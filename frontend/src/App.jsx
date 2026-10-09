@@ -6,12 +6,18 @@ import Pregnants from './components/pages/pregnants/Pregnants';
 import Products from './components/pages/products/Products';
 import Access from './components/pages/auth/Access';
 import { API_BASE } from './api';
+import { canAccessPath } from './accessControl';
 
 const SESSION_API = `${API_BASE}/login/verificar`;
 
 function ProtectedRoute() {
   const location = useLocation();
-  const [session, setSession] = useState({ path: null, status: 'checking', error: '' });
+  const [session, setSession] = useState({
+    path: null,
+    status: 'checking',
+    error: '',
+    user: null,
+  });
 
   useEffect(() => {
     let active = true;
@@ -20,7 +26,14 @@ function ProtectedRoute() {
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (response.status === 401) {
-          if (active) setSession({ path: location.pathname, status: 'unauthenticated', error: '' });
+          if (active) {
+            setSession({
+              path: location.pathname,
+              status: 'unauthenticated',
+              error: '',
+              user: null,
+            });
+          }
           return;
         }
         if (!response.ok) {
@@ -31,12 +44,18 @@ function ProtectedRoute() {
             path: location.pathname,
             status: data.logado ? 'authenticated' : 'unauthenticated',
             error: '',
+            user: data.logado ? data.usuario : null,
           });
         }
       })
       .catch((requestError) => {
         if (active) {
-          setSession({ path: location.pathname, status: 'error', error: requestError.message });
+          setSession({
+            path: location.pathname,
+            status: 'error',
+            error: requestError.message,
+            user: null,
+          });
         }
       });
 
@@ -64,7 +83,11 @@ function ProtectedRoute() {
     return <Navigate to="/acesso" replace state={{ from: location.pathname }} />;
   }
 
-  return <Outlet />;
+  if (!canAccessPath(session.user, location.pathname)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet context={{ user: session.user }} />;
 }
 
 function App() {

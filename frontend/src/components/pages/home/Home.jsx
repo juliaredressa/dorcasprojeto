@@ -11,8 +11,9 @@ import {
   Sparkles,
   UsersRound,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import PortalLayout from '../../layout/PortalLayout';
+import { isAssistenteSocial } from '../../../accessControl';
 import './Home.css';
 
 const areas = [
@@ -91,6 +92,11 @@ const areas = [
 ];
 
 function Home() {
+  const { user } = useOutletContext();
+  const visibleAreas = isAssistenteSocial(user)
+    ? areas.filter(({ href }) => ['/gestante', '/triagem', '/kits', '/fila-prioridade'].includes(href))
+    : areas;
+
   return (
     <PortalLayout active="home">
         <section className="home-welcome" aria-labelledby="home-title">
@@ -134,7 +140,7 @@ function Home() {
           </div>
 
           <div className="home-access-grid">
-            {areas.map(({ title, description, eyebrow, href, icon: Icon, className, action }) => (
+            {visibleAreas.map(({ title, description, eyebrow, href, icon: Icon, className, action }) => (
               <Link className={`home-access-card ${className}`} key={title} to={href}>
                 <span className="home-card-icon"><Icon size={22} strokeWidth={1.8} /></span>
                 <ArrowUpRight className="home-card-open" size={20} aria-hidden="true" />

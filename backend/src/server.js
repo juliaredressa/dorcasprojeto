@@ -18,6 +18,7 @@ const loginRoutes = require("./routes/loginRoutes");
 const produtosRoutes = require("./routes/produtoRoutes");
 const colaboradoresRoutes = require("./routes/colaboradoresRoutes");
 const authRoutes = require("./routes/auth");
+const requireRoleAccess = require("./middleware/roleAccess");
 
 const app = express();
 
@@ -54,30 +55,31 @@ app.use(
 app.use(
     "/api-docs",
     requireAuthentication,
+    requireRoleAccess,
     swaggerUi.serve,
     swaggerUi.setup(swaggerDocument)
 );
 
 // ROTAS
-app.use("/gestante", requireAuthentication, gestanteRoutes);
-app.use("/produtos", requireAuthentication, produtosRoutes);
-app.use("/colaboradores", requireAuthentication, colaboradoresRoutes);
+app.use("/gestante", requireAuthentication, requireRoleAccess, gestanteRoutes);
+app.use("/produtos", requireAuthentication, requireRoleAccess, produtosRoutes);
+app.use("/colaboradores", requireAuthentication, requireRoleAccess, colaboradoresRoutes);
 app.use("/auth", authRoutes);
-app.use("/api/categorias", requireAuthentication, categoriaRoutes);
-app.use("/api/gestantes", requireAuthentication, gestanteRoutes);
-app.use("/api/triagens", requireAuthentication, triagemRoutes);
-app.use("/api/doacoes", requireAuthentication, doacaoRoutes);
-app.use("/api/kits", requireAuthentication, kitRoutes);
-app.use("/api/estoque", requireAuthentication, estoqueRoutes);
-app.use("/api/fila-prioridade", requireAuthentication, filaPrioridadeRoutes);
+app.use("/api/categorias", requireAuthentication, requireRoleAccess, categoriaRoutes);
+app.use("/api/gestantes", requireAuthentication, requireRoleAccess, gestanteRoutes);
+app.use("/api/triagens", requireAuthentication, requireRoleAccess, triagemRoutes);
+app.use("/api/doacoes", requireAuthentication, requireRoleAccess, doacaoRoutes);
+app.use("/api/kits", requireAuthentication, requireRoleAccess, kitRoutes);
+app.use("/api/estoque", requireAuthentication, requireRoleAccess, estoqueRoutes);
+app.use("/api/fila-prioridade", requireAuthentication, requireRoleAccess, filaPrioridadeRoutes);
 
 app.get("/", (req, res) => {
     res.json({
         mensagem: "API DorcasGestão funcionando!"
     });
 });
-app.use("/api/produtos", requireAuthentication, produtosRoutes);
-app.use("/api/colaboradores", requireAuthentication, colaboradoresRoutes);
+app.use("/api/produtos", requireAuthentication, requireRoleAccess, produtosRoutes);
+app.use("/api/colaboradores", requireAuthentication, requireRoleAccess, colaboradoresRoutes);
 app.use("/api/login", loginRoutes);
 
 const PORT = process.env.PORT || 3000;

@@ -3,8 +3,8 @@ ALTER TABLE usuario
 
 UPDATE usuario
 SET is_admin = 1
-WHERE login = 'teste@testando.com';
+WHERE login = 'testando@teste.com';
 
 SELECT login, is_admin
 FROM usuario
-WHERE login = 'teste@testando.com';
+WHERE login = 'testando@teste.com';
