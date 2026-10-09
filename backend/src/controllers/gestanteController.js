@@ -1,4 +1,5 @@
 const db = require('../db');
+const situacoesPermitidas = new Set(["ATIVA", "INATIVA", "ENCERRADA"]);
 
 // LISTAR TODAS
 const listarGestantes = (req, res) => {
@@ -248,6 +249,43 @@ const atualizarGestante = async (req, res) => {
     }
 };
 
+const atualizarSituacaoGestante = async (req, res) => {
+    const id = Number(req.params.id);
+    const situacao = typeof req.body.situacao === "string"
+        ? req.body.situacao.trim().toUpperCase()
+        : "";
+
+    if (!Number.isInteger(id) || id < 1) {
+        return res.status(400).json({ erro: "O identificador da gestante é inválido." });
+    }
+
+    if (!situacoesPermitidas.has(situacao)) {
+        return res.status(400).json({ erro: "Selecione uma situação válida." });
+    }
+
+    try {
+        const [resultado] = await db.promise().query(
+            "UPDATE gestante SET situacao = ? WHERE id_pessoa = ?",
+            [situacao, id]
+        );
+
+        if (resultado.affectedRows === 0) {
+            const [gestantes] = await db.promise().query(
+                "SELECT id_pessoa FROM gestante WHERE id_pessoa = ?",
+                [id]
+            );
+            if (gestantes.length === 0) {
+                return res.status(404).json({ erro: "Gestante não encontrada." });
+            }
+        }
+
+        return res.json({ mensagem: "Situação da gestante atualizada com sucesso.", situacao });
+    } catch (erro) {
+        console.error(erro);
+        return res.status(500).json({ erro: "Erro ao atualizar a situação da gestante." });
+    }
+};
+
 
 // EXCLUIR
 const excluirGestante = (req, res) => {
@@ -283,5 +321,6 @@ module.exports = {
     buscarGestante,
     cadastrarGestante,
     atualizarGestante,
+    atualizarSituacaoGestante,
     excluirGestante
 };

@@ -128,6 +128,54 @@ module.exports = {
         }
       }
     },
+    '/api/gestantes/{id}/situacao': {
+      parameters: [
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          description: 'Identificador da pessoa gestante.',
+          schema: { type: 'integer' }
+        }
+      ],
+      patch: {
+        tags: ['Gestantes'],
+        summary: 'Atualiza somente a situação da gestante',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['situacao'],
+                properties: {
+                  situacao: { type: 'string', enum: ['ATIVA', 'INATIVA', 'ENCERRADA'] }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: 'Situação atualizada.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    mensagem: { type: 'string' },
+                    situacao: { type: 'string', enum: ['ATIVA', 'INATIVA', 'ENCERRADA'] }
+                  }
+                }
+              }
+            }
+          },
+          400: { $ref: '#/components/responses/ErroRequisicao' },
+          404: { $ref: '#/components/responses/NaoEncontrado' },
+          500: { $ref: '#/components/responses/ErroServidor' }
+        }
+      }
+    },
     '/api/produtos': {
       get: {
         tags: ['Produtos'],

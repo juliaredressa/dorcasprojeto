@@ -3,7 +3,30 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 10px;
   margin-left: auto;
+}
+
+.account-home-link {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid #f0dce4;
+  border-radius: 7px;
+  color: var(--home-pink-dark);
+  background: rgba(255, 255, 255, 0.76);
+  font: 600 12px 'DM Sans', 'Trebuchet MS', sans-serif;
+  text-decoration: none;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.account-home-link:hover,
+.account-home-link:focus-visible {
+  border-color: #e5b8c9;
+  background: #fff0f4;
 }
 
 .account-menu {
@@ -291,6 +314,20 @@
 }
 
 @media (max-width: 460px) {
+  .account-home-link {
+    width: 40px;
+    padding: 0;
+  }
+
+  .account-home-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
   .account-menu-trigger {
     min-height: 46px;
     gap: 7px;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Heart, KeyRound, LogOut, Save, UserRound, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ChevronDown, Heart, Home, KeyRound, LogOut, Save, UserRound, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../pages/home/Home.css';
 import { API_BASE } from '../../api';
 import './management.css';
@@ -8,6 +8,7 @@ import './account.css';
 
 function PortalLayout({ children, contentClassName = '' }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const accountMenuRef = useRef(null);
   const [user, setUser] = useState(null);
   const [accountError, setAccountError] = useState('');
@@ -138,6 +139,13 @@ function PortalLayout({ children, contentClassName = '' }) {
 
         <div className="home-topbar-account">
           {user ? (
+            <>
+            {location.pathname !== '/' && (
+              <Link className="account-home-link" to="/">
+                <Home aria-hidden="true" size={17} />
+                <span>Menu principal</span>
+              </Link>
+            )}
             <div className="account-menu" ref={accountMenuRef}>
               <button
                 aria-expanded={accountMenuOpen}
@@ -177,6 +185,7 @@ function PortalLayout({ children, contentClassName = '' }) {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <span className="home-topbar-note"><span aria-hidden="true" /> Projeto Dorcas</span>
           )}

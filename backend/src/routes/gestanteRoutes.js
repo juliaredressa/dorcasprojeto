@@ -6,10 +6,12 @@ const {
     buscarGestante,
     cadastrarGestante,
     atualizarGestante,
+    atualizarSituacaoGestante,
     excluirGestante
 } = require("../controllers/gestanteController");
 
 router.get("/", listarGestantes);
+router.patch("/:id/situacao", atualizarSituacaoGestante);
 router.get("/:id", buscarGestante);
 router.post("/", cadastrarGestante);
 router.put("/:id", atualizarGestante);

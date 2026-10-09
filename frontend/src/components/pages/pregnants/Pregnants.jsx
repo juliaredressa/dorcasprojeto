@@ -34,6 +34,7 @@ function Pregnants() {
   const [editando, setEditando] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [atualizandoSituacaoId, setAtualizandoSituacaoId] = useState(null);
   const [erro, setErro] = useState("");
   const [mensagem, setMensagem] = useState("");
 
@@ -162,6 +163,34 @@ function Pregnants() {
     } catch (erro) {
       console.error(erro);
       setErro(erro.response?.data?.erro || "Erro ao excluir gestante.");
+    }
+  };
+
+  const atualizarSituacao = async (gestante, situacao) => {
+    setErro("");
+    setMensagem("");
+    setAtualizandoSituacaoId(gestante.id_pessoa);
+
+    try {
+      const resposta = await axios.patch(
+        `${API_BASE}/gestantes/${gestante.id_pessoa}/situacao`,
+        { situacao },
+        { withCredentials: true }
+      );
+      setGestantes((atuais) => atuais.map((item) => (
+        item.id_pessoa === gestante.id_pessoa
+          ? { ...item, situacao: resposta.data.situacao }
+          : item
+      )));
+      setMensagem(resposta.data.mensagem || "Situação da gestante atualizada com sucesso.");
+    } catch (erroAtualizacao) {
+      setErro(
+        erroAtualizacao.response?.data?.erro
+          || erroAtualizacao.response?.data?.mensagem
+          || "Não foi possível atualizar a situação da gestante."
+      );
+    } finally {
+      setAtualizandoSituacaoId(null);
     }
   };
 
@@ -387,11 +416,17 @@ function Pregnants() {
                       <td>{formatarData(gestante.data_cadastro)}</td>
 
                       <td>
-                        <span
-                          className={`management-status management-status--${gestante.situacao.toLowerCase()}`}
+                        <select
+                          aria-label={`Situação de ${gestante.nome}`}
+                          className={`management-status-select management-status--${gestante.situacao.toLowerCase()}`}
+                          disabled={atualizandoSituacaoId === gestante.id_pessoa}
+                          onChange={(event) => atualizarSituacao(gestante, event.target.value)}
+                          value={gestante.situacao}
                         >
-                          {gestante.situacao}
-                        </span>
+                          <option value="ATIVA">ATIVA</option>
+                          <option value="INATIVA">INATIVA</option>
+                          <option value="ENCERRADA">ENCERRADA</option>
+                        </select>
                       </td>
 
                       <td>

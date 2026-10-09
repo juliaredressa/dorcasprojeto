@@ -375,6 +375,28 @@
   background: #fff3f6;
 }
 
+.management-status-select {
+  min-height: 28px;
+  padding: 3px 22px 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  appearance: auto;
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.management-status-select:focus-visible {
+  outline: 2px solid #d66a94;
+  outline-offset: 2px;
+}
+
+.management-status-select:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .management-status--ativa {
   color: #3f7254;
   background: #eaf5eb;
