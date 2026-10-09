@@ -20,8 +20,9 @@ import {
 } from 'lucide-react';
 import PortalLayout from '../../layout/PortalLayout';
 import { moduleConfig } from './moduleConfig';
+import { API_BASE } from '../../../api';
 
-const API = 'http://localhost:3000/api';
+const API = API_BASE;
 
 const icons = {
   UsersRound,
@@ -58,37 +59,15 @@ function formatDate(value) {
   return String(value).slice(0, 10);
 }
 
-function formatCpf(value) {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  return digits
-    .replace(/^(\d{3})(\d)/, '$1.$2')
-    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/\.(\d{3})(\d)/, '.$1-$2');
-}
-
-function isValidCpf(value) {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
-
-  const calculateDigit = (base, initialWeight) => {
-    const sum = [...base].reduce(
-      (total, digit, index) => total + Number(digit) * (initialWeight - index),
-      0,
-    );
-    const remainder = (sum * 10) % 11;
-    return remainder === 10 ? 0 : remainder;
-  };
-
-  return calculateDigit(digits.slice(0, 9), 10) === Number(digits[9])
-    && calculateDigit(digits.slice(0, 10), 11) === Number(digits[10]);
-}
-
 function formatLabel(key) {
   return labelOverrides[key] || key.replaceAll('_', ' ').replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
 async function request(path, options) {
-  const response = await fetch(`${API}${path}`, options);
+  const response = await fetch(`${API}${path}`, {
+    credentials: 'include',
+    ...options,
+  });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -203,7 +182,7 @@ function ResourcePage({ config }) {
   function setField(name, value) {
     setForm((current) => ({
       ...current,
-      [name]: name === 'cpf' ? formatCpf(value) : value,
+      [name]: value,
     }));
   }
 
@@ -242,12 +221,6 @@ function ResourcePage({ config }) {
     setSaving(true);
     setError('');
     setMessage('');
-
-    if (currentFields.some((field) => field.name === 'cpf') && !isValidCpf(form.cpf || '')) {
-      setError('Informe um CPF válido.');
-      setSaving(false);
-      return;
-    }
 
     if (config.withItems && editingId === null && itemRows.some((item) => !item.id_item || !item.quantidade || Number(item.quantidade) < 1)) {
       setError('Selecione um item e informe uma quantidade maior que zero para cada item.');
@@ -354,10 +327,7 @@ function ResourcePage({ config }) {
         ) : (
           <input
             {...commonProps}
-            autoComplete={field.name === 'cpf' ? 'off' : undefined}
-            inputMode={field.name === 'cpf' ? 'numeric' : undefined}
-            maxLength={field.name === 'cpf' ? 14 : undefined}
-            placeholder={field.name === 'cpf' ? '000.000.000-00' : field.placeholder}
+            placeholder={field.placeholder}
             type={field.type || 'text'}
           />
         )}

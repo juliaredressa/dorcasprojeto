@@ -161,6 +161,26 @@ module.exports = {
         }
       }
     },
+    '/api/produtos/categorias': {
+      get: {
+        tags: ['Produtos'],
+        summary: 'Lista categorias disponíveis para produtos',
+        responses: {
+          200: {
+            description: 'Categorias encontradas.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Categoria' }
+                }
+              }
+            }
+          },
+          500: { $ref: '#/components/responses/ErroServidor' }
+        }
+      }
+    },
     '/api/produtos/{id}': {
       parameters: [
         {
@@ -272,7 +292,9 @@ module.exports = {
           unidade_medida: { type: 'string' },
           quantidade_minima: { type: 'integer' },
           id_categoria: { type: 'integer' },
-          nome_categoria: { type: 'string' }
+          nome_categoria: { type: 'string' },
+          quantidade_atual: { type: 'integer', minimum: 0, nullable: true },
+          local_armazenamento: { type: 'string', nullable: true }
         }
       },
       ProdutoInput: {
@@ -283,7 +305,9 @@ module.exports = {
           tamanho: { type: 'string', nullable: true, example: 'M' },
           unidade_medida: { type: 'string', example: 'pacote' },
           quantidade_minima: { type: 'integer', minimum: 1, example: 10 },
-          id_categoria: { type: 'integer', example: 1 }
+          id_categoria: { type: 'integer', example: 1 },
+          quantidade_atual: { type: 'integer', minimum: 0, example: 0, default: 0 },
+          local_armazenamento: { type: 'string', nullable: true, example: 'Prateleira A' }
         }
       },
       Resultado: {
@@ -569,6 +593,40 @@ Object.assign(module.exports.paths, {
       }
     }
   },
+  '/api/login/colaboradores-disponiveis': {
+    get: {
+      tags: ['Autenticação'],
+      summary: 'Lista colaboradores que ainda não possuem conta',
+      responses: {
+        200: jsonResponse('Colaboradores disponíveis.', {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id_pessoa: { type: 'integer' },
+              nome: { type: 'string' },
+              matricula: { type: 'string' }
+            }
+          }
+        }),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
+  '/api/login/cadastro': {
+    post: {
+      tags: ['Autenticação'],
+      summary: 'Cria uma conta de acesso para um colaborador',
+      requestBody: requestBodyRef('CadastroUsuario'),
+      responses: {
+        201: jsonResponse('Conta criada.', schemaRef('CadastroUsuarioResultado')),
+        400: responseRef('ErroRequisicao'),
+        404: responseRef('NaoEncontrado'),
+        409: responseRef('Conflito'),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
   '/api/login/verificar': {
     get: {
       tags: ['Autenticação'],
@@ -624,7 +682,7 @@ Object.assign(module.exports.components.schemas, {
   },
   Colaborador: {
     type: 'object',
-    required: ['nome', 'cpf', 'cargo', 'data_admissao'],
+    required: ['nome', 'cpf', 'cargo', 'matricula', 'data_admissao'],
     properties: {
       id_pessoa: { type: 'integer', readOnly: true, description: 'ID de cadastro gerado automaticamente.' },
       nome: { type: 'string' },
@@ -636,6 +694,7 @@ Object.assign(module.exports.components.schemas, {
         type: 'string',
         enum: ['Administrador(a)', 'Assistente social', 'Auxiliar administrativo(a)', 'Coordenador(a)', 'Educador(a) social', 'Psicólogo(a)', 'Recepcionista', 'Outro']
       },
+      matricula: { type: 'string', maxLength: 30 },
       data_admissao: { type: 'string', format: 'date' }
     }
   },
@@ -795,6 +854,23 @@ Object.assign(module.exports.components.schemas, {
       senha: { type: 'string', format: 'password', example: 'senha123' }
     }
   },
+  CadastroUsuario: {
+    type: 'object',
+    required: ['id_funcionario', 'login', 'senha'],
+    properties: {
+      id_funcionario: { type: 'integer', example: 6 },
+      login: { type: 'string', maxLength: 100, example: 'janaina' },
+      senha: { type: 'string', format: 'password', minLength: 6 }
+    }
+  },
+  CadastroUsuarioResultado: {
+    type: 'object',
+    properties: {
+      id_usuario: { type: 'integer' },
+      login: { type: 'string' },
+      mensagem: { type: 'string' }
+    }
+  },
   UsuarioSessao: {
     type: 'object',
     properties: {
@@ -803,7 +879,8 @@ Object.assign(module.exports.components.schemas, {
       id_funcionario: { type: 'integer' },
       nome: { type: 'string' },
       cargo: { type: 'string' },
-      matricula: { type: 'string' }
+      matricula: { type: 'string' },
+      is_admin: { type: 'boolean' }
     }
   },
   LoginResultado: {
@@ -832,6 +909,20 @@ Object.assign(module.exports.components.schemas, {
     type: 'object',
     properties: { id_pessoa: { type: 'integer' }, mensagem: { type: 'string' } }
   }
+});
+
+Object.assign(module.exports.paths, {
+  '/produtos': module.exports.paths['/api/produtos'],
+  '/produtos/categorias': module.exports.paths['/api/produtos/categorias'],
+  '/produtos/{id}': module.exports.paths['/api/produtos/{id}'],
+  '/colaboradores': module.exports.paths['/api/colaboradores'],
+  '/colaboradores/{id}': module.exports.paths['/api/colaboradores/{id}'],
+  '/auth/login': module.exports.paths['/api/login'],
+  '/auth/verificar': module.exports.paths['/api/login/verificar'],
+  '/auth/logout': module.exports.paths['/api/login/logout'],
+  '/auth/senha': module.exports.paths['/api/login/alterar-senha'],
+  '/gestante': module.exports.paths['/api/gestantes'],
+  '/gestante/{id}': module.exports.paths['/api/gestantes/{id}']
 });
 
 Object.assign(module.exports.components.requestBodies, {
@@ -870,6 +961,10 @@ Object.assign(module.exports.components.requestBodies, {
   Login: {
     required: true,
     content: { 'application/json': { schema: schemaRef('Login') } }
+  },
+  CadastroUsuario: {
+    required: true,
+    content: { 'application/json': { schema: schemaRef('CadastroUsuario') } }
   },
   AlterarSenha: {
     required: true,

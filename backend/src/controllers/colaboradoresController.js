@@ -1,4 +1,5 @@
 const db = require('../db');
+const pool = require('../databasePool');
 
 exports.listar = (req, res) => {
 
@@ -31,6 +32,35 @@ exports.listar = (req, res) => {
     });
 };
 
+exports.buscar = (req, res) => {
+    const sql = `
+        SELECT
+            p.id_pessoa,
+            p.nome,
+            p.cpf,
+            p.telefone,
+            p.email,
+            p.endereco,
+            f.cargo,
+            f.matricula,
+            f.data_admissao
+        FROM pessoa p
+        INNER JOIN funcionario f
+            ON p.id_pessoa = f.id_pessoa
+        WHERE p.id_pessoa = ?
+    `;
+
+    db.query(sql, [req.params.id], (err, results) => {
+        if (err) {
+            return res.status(500).json({ erro: 'Erro ao buscar colaborador' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ erro: 'Colaborador não encontrado' });
+        }
+        res.json(results[0]);
+    });
+};
+
 
 exports.cadastrar = (req, res) => {
 
@@ -57,13 +87,20 @@ exports.cadastrar = (req, res) => {
         });
     }
 
-    db.beginTransaction(err => {
-
-        if (err) {
+    db.getConnection((connectionError, connection) => {
+        if (connectionError) {
             return res.status(500).json({
                 erro: 'Erro na transação'
             });
         }
+
+        connection.beginTransaction(err => {
+            if (err) {
+                connection.release();
+                return res.status(500).json({
+                    erro: 'Erro na transação'
+                });
+            }
 
         const sqlPessoa = `
             INSERT INTO pessoa
@@ -71,14 +108,15 @@ exports.cadastrar = (req, res) => {
             VALUES (?, ?, ?, ?, ?)
         `;
 
-        db.query(
+        connection.query(
             sqlPessoa,
             [nome, cpf, telefone, email, endereco],
             (err, result) => {
 
                 if (err) {
 
-                    return db.rollback(() => {
+                    return connection.rollback(() => {
+                        connection.release();
                         res.status(400).json({
                             erro: 'Erro ao cadastrar pessoa',
                             detalhe: err.message
@@ -100,7 +138,7 @@ exports.cadastrar = (req, res) => {
                     VALUES (?, ?, ?, ?)
                 `;
 
-                db.query(
+                connection.query(
                     sqlFuncionario,
                     [
                         idPessoa,
@@ -112,7 +150,8 @@ exports.cadastrar = (req, res) => {
 
                         if (err) {
 
-                            return db.rollback(() => {
+                            return connection.rollback(() => {
+                                connection.release();
                                 res.status(400).json({
                                     erro: 'Erro ao cadastrar colaborador',
                                     detalhe: err.message
@@ -121,11 +160,12 @@ exports.cadastrar = (req, res) => {
 
                         }
 
-                        db.commit(err => {
+                        connection.commit(err => {
 
                             if (err) {
 
-                                return db.rollback(() => {
+                                return connection.rollback(() => {
+                                    connection.release();
                                     res.status(500).json({
                                         erro: 'Erro ao finalizar cadastro'
                                     });
@@ -133,6 +173,7 @@ exports.cadastrar = (req, res) => {
 
                             }
 
+                            connection.release();
                             res.status(201).json({
                                 mensagem: 'Colaborador cadastrado',
                                 id_pessoa: idPessoa
@@ -147,6 +188,7 @@ exports.cadastrar = (req, res) => {
         );
 
     });
+        });
 };
 
 
@@ -165,6 +207,9 @@ exports.editar = (req, res) => {
         data_admissao
     } = req.body;
 
+    if (!nome || !cpf || !cargo || !matricula || !data_admissao) {
+        return res.status(400).json({ erro: 'Preencha os campos obrigatórios' });
+    }
     const sqlPessoa = `
         UPDATE pessoa
         SET nome = ?,
@@ -230,41 +275,71 @@ exports.editar = (req, res) => {
 };
 
 
-exports.excluir = (req, res) => {
+exports.excluir = async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) {
+        return res.status(400).json({
+            mensagem: 'O identificador do colaborador é inválido.'
+        });
+    }
 
-    const { id } = req.params;
+    if (req.session?.usuario?.id_funcionario === id) {
+        return res.status(409).json({
+            mensagem: 'Não é possível excluir o colaborador da sessão atual.'
+        });
+    }
 
-    db.query(
-        'DELETE FROM funcionario WHERE id_pessoa = ?',
-        [id],
-        err => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
 
-            if (err) {
-                return res.status(400).json({
-                    erro: 'Erro ao excluir colaborador',
-                    detalhe: err.message
-                });
-            }
-
-            db.query(
-                'DELETE FROM pessoa WHERE id_pessoa = ?',
-                [id],
-                err => {
-
-                    if (err) {
-                        return res.status(400).json({
-                            erro: 'Erro ao excluir pessoa',
-                            detalhe: err.message
-                        });
-                    }
-
-                    res.json({
-                        mensagem: 'Colaborador excluído'
-                    });
-
-                }
-            );
-
+        const [colaboradores] = await connection.query(
+            'SELECT id_pessoa FROM funcionario WHERE id_pessoa = ? FOR UPDATE',
+            [id]
+        );
+        if (colaboradores.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                mensagem: 'Colaborador não encontrado.'
+            });
         }
-    );
+
+        await connection.query(
+            'DELETE FROM usuario WHERE id_funcionario = ?',
+            [id]
+        );
+        await connection.query(
+            'DELETE FROM funcionario WHERE id_pessoa = ?',
+            [id]
+        );
+        await connection.query(
+            'DELETE FROM pessoa WHERE id_pessoa = ?',
+            [id]
+        );
+        await connection.commit();
+
+        res.json({
+            mensagem: 'Colaborador e sua conta de acesso foram excluídos.'
+        });
+    } catch (erro) {
+        if (connection) {
+            await connection.rollback().catch((erroRollback) => {
+                console.error(erroRollback);
+            });
+        }
+
+        if (erro.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(409).json({
+                mensagem: 'Este colaborador possui registros vinculados (como doações, kits ou triagens) e não pode ser excluído para preservar o histórico.'
+            });
+        }
+
+        console.error(erro);
+        res.status(500).json({
+            mensagem: 'Não foi possível excluir o colaborador.'
+        });
+    } finally {
+        if (connection) connection.release();
+    }
 };

@@ -1,0 +1,198 @@
+.access-content {
+  padding-bottom: 48px;
+}
+
+.auth-route-status {
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  color: #604654;
+  background: #fff8fa;
+  font: 500 14px 'DM Sans', 'Trebuchet MS', sans-serif;
+  text-align: center;
+}
+
+.auth-route-status--error {
+  color: #8f2f49;
+}
+
+.auth-route-status a {
+  color: #b51e61;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-route-status a:hover {
+  text-decoration: underline;
+}
+
+.access-content .management-heading {
+  width: min(100% - 32px, 620px);
+  margin: 12px auto 24px;
+  text-align: center;
+}
+
+.access-content .management-heading .home-eyebrow {
+  letter-spacing: 0.14em;
+}
+
+.access-content .management-heading > p:last-child {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.access-content .management-panel {
+  width: min(100% - 32px, 560px);
+  margin: 0 auto 18px;
+  padding: 27px 30px 30px;
+  border-color: #f0dfe5;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(89, 44, 63, 0.09);
+}
+
+.access-content .management-panel-heading {
+  justify-content: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 19px;
+}
+
+.access-content .management-panel-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.access-content .management-panel-heading h2 {
+  font-size: 23px;
+}
+
+.access-content .management-panel-heading p {
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.access-form-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.access-content .management-field {
+  gap: 8px;
+  color: #604654;
+  font-size: 12px;
+}
+
+.access-content .management-field input,
+.access-content .management-field select {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-color: #eadde2;
+  border-radius: 7px;
+  background-color: #fdfafb;
+  font-size: 14px;
+}
+
+.access-content .management-field input:focus,
+.access-content .management-field select:focus {
+  border-color: #d66a94;
+  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(213, 45, 112, 0.09);
+}
+
+.access-content .management-actions {
+  gap: 11px;
+  margin-top: 24px;
+}
+
+.access-content .management-button {
+  min-height: 46px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.access-content .access-form > .management-actions .management-button {
+  flex: 1 1 180px;
+}
+
+.access-forgot-link {
+  display: block;
+  margin: 18px auto 0;
+  padding: 5px 8px;
+  border: 0;
+  color: var(--home-pink-dark);
+  background: transparent;
+  cursor: pointer;
+  font: 600 12px 'DM Sans', 'Trebuchet MS', sans-serif;
+}
+
+.access-forgot-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.access-forgot-link:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.access-recovery-message {
+  padding: 15px 17px;
+  border: 1px solid #f1e1e7;
+  border-radius: 7px;
+  color: #745b68;
+  background: #fff8fa;
+  font: 400 13px/1.65 'DM Sans', 'Trebuchet MS', sans-serif;
+}
+
+.access-recovery-message p {
+  margin: 0;
+}
+
+.access-password-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.access-field-hint {
+  color: #917b86;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.access-content .management-notice {
+  width: min(100% - 32px, 560px);
+  margin: 0 auto 14px;
+  padding: 12px 16px;
+  border-radius: 7px;
+}
+
+@media (max-width: 560px) {
+  .access-content .management-heading {
+    width: calc(100% - 28px);
+  }
+
+  .access-content .management-panel {
+    width: calc(100% - 28px);
+    padding: 21px 18px 23px;
+  }
+
+  .access-password-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .access-content .management-actions {
+    flex-direction: column;
+  }
+
+  .access-content .access-form > .management-actions .management-button {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+}

@@ -16,6 +16,7 @@ export const moduleConfig = {
     fields: [
       { name: 'nome', label: 'Nome completo', required: true },
       { name: 'cpf', label: 'CPF', required: true },
+      { name: 'matricula', label: 'Matrícula', required: true },
       { name: 'telefone', label: 'Telefone', type: 'tel' },
       { name: 'email', label: 'E-mail', type: 'email' },
       { name: 'endereco', label: 'Endereço' },
@@ -42,6 +43,7 @@ export const moduleConfig = {
       { key: 'nome', label: 'Nome' },
       { key: 'id_pessoa', label: 'ID de cadastro' },
       { key: 'cargo', label: 'Cargo' },
+      { key: 'matricula', label: 'Matrícula' },
       { key: 'telefone', label: 'Telefone' },
       { key: 'data_admissao', label: 'Admissão', type: 'date' },
     ],

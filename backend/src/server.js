@@ -14,28 +14,28 @@ const doacaoRoutes = require("./routes/doacaoRoutes");
 const kitRoutes = require("./routes/kitRoutes");
 const estoqueRoutes = require("./routes/estoqueRoutes");
 const filaPrioridadeRoutes = require("./routes/filaPrioridadeRoutes");
-const produtoRoutes = require("./routes/produtoRoutes");
-const colaboradorRoutes = require("./routes/colaboradorRoutes");
 const loginRoutes = require("./routes/loginRoutes");
-
-app.use('/gestante', gestanteRoutes);
+const produtosRoutes = require("./routes/produtoRoutes");
+const colaboradoresRoutes = require("./routes/colaboradoresRoutes");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
-const produtosRoutes = require('./routes/produtos');
+const requireAuthentication = (req, res, next) => {
+    if (!req.session?.usuario) {
+        return res.status(401).json({
+            mensagem: "Autenticação necessária para acessar este recurso."
+        });
+    }
+    next();
+};
 
-app.use('/produtos', produtosRoutes);
-
-const colaboradoresRoutes =
-    require('./routes/colaboradores');
-
-app.use('/colaboradores', colaboradoresRoutes);
-
-const authRoutes = require('./routes/auth');
-
-app.use('/auth', authRoutes);
-
-app.use(cors());
+app.use(
+    cors({
+        origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+        credentials: true
+    })
+);
 app.use(express.json());
 
 app.use(
@@ -53,26 +53,31 @@ app.use(
 
 app.use(
     "/api-docs",
+    requireAuthentication,
     swaggerUi.serve,
     swaggerUi.setup(swaggerDocument)
 );
 
 // ROTAS
-app.use("/api/categorias", categoriaRoutes);
-app.use("/api/gestantes", gestanteRoutes);
-app.use("/api/triagens", triagemRoutes);
-app.use("/api/doacoes", doacaoRoutes);
-app.use("/api/kits", kitRoutes);
-app.use("/api/estoque", estoqueRoutes);
-app.use("/api/fila-prioridade", filaPrioridadeRoutes);
+app.use("/gestante", requireAuthentication, gestanteRoutes);
+app.use("/produtos", requireAuthentication, produtosRoutes);
+app.use("/colaboradores", requireAuthentication, colaboradoresRoutes);
+app.use("/auth", authRoutes);
+app.use("/api/categorias", requireAuthentication, categoriaRoutes);
+app.use("/api/gestantes", requireAuthentication, gestanteRoutes);
+app.use("/api/triagens", requireAuthentication, triagemRoutes);
+app.use("/api/doacoes", requireAuthentication, doacaoRoutes);
+app.use("/api/kits", requireAuthentication, kitRoutes);
+app.use("/api/estoque", requireAuthentication, estoqueRoutes);
+app.use("/api/fila-prioridade", requireAuthentication, filaPrioridadeRoutes);
 
 app.get("/", (req, res) => {
     res.json({
         mensagem: "API DorcasGestão funcionando!"
     });
 });
-app.use("/api/produtos", produtoRoutes);
-app.use("/api/colaboradores", colaboradorRoutes);
+app.use("/api/produtos", requireAuthentication, produtosRoutes);
+app.use("/api/colaboradores", requireAuthentication, colaboradoresRoutes);
 app.use("/api/login", loginRoutes);
 
 const PORT = process.env.PORT || 3000;

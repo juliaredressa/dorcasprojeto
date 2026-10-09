@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Baby, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import PortalLayout from "../../layout/PortalLayout";
+import { API_BASE } from "../../../api";
 
 const formularioVazio = {
   nome: "",
@@ -40,7 +41,7 @@ function Pregnants() {
     setCarregando(true);
 
     try {
-      const resposta = await axios.get("http://localhost:3000/api/gestantes");
+      const resposta = await axios.get(`${API_BASE}/gestantes`, { withCredentials: true });
       setGestantes(resposta.data);
     } catch (erro) {
       console.error(erro);
@@ -108,10 +109,10 @@ function Pregnants() {
       let mensagemSucesso;
 
       if (editando) {
-        const resposta = await axios.put(`http://localhost:3000/api/gestantes/${editando}`, dados);
+        const resposta = await axios.put(`${API_BASE}/gestantes/${editando}`, dados, { withCredentials: true });
         mensagemSucesso = resposta.data.mensagem || "Gestante atualizada com sucesso!";
       } else {
-        const resposta = await axios.post("http://localhost:3000/api/gestantes", dados);
+        const resposta = await axios.post(`${API_BASE}/gestantes`, dados, { withCredentials: true });
         mensagemSucesso = resposta.data.mensagem || "Gestante cadastrada com sucesso!";
       }
 
@@ -155,7 +156,7 @@ function Pregnants() {
     setMensagem("");
 
     try {
-      const resposta = await axios.delete(`http://localhost:3000/api/gestantes/${id}`);
+      const resposta = await axios.delete(`${API_BASE}/gestantes/${id}`, { withCredentials: true });
       setMensagem(resposta.data.mensagem || "Gestante excluída com sucesso!");
       await carregarGestantes();
     } catch (erro) {

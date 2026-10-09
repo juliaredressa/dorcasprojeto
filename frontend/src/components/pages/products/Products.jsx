@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { PackageOpen, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import PortalLayout from "../../layout/PortalLayout";
+import { API_BASE } from "../../../api";
 
-const API = "http://localhost:3000/api";
+const API = API_BASE;
 
 const formularioVazio = {
   nome_item: "",
@@ -10,6 +11,8 @@ const formularioVazio = {
   unidade_medida: "",
   quantidade_minima: "",
   id_categoria: "",
+  quantidade_atual: "0",
+  local_armazenamento: "",
 };
 
 function Products() {
@@ -27,8 +30,8 @@ function Products() {
   async function carregarDados() {
     try {
       const [resProdutos, resCategorias] = await Promise.all([
-        fetch(`${API}/produtos`),
-        fetch(`${API}/categorias`),
+        fetch(`${API}/produtos`, { credentials: "include" }),
+        fetch(`${API}/categorias`, { credentials: "include" }),
       ]);
 
       if (!resProdutos.ok || !resCategorias.ok) {
@@ -64,6 +67,14 @@ function Products() {
       return "A quantidade mínima deve ser maior que zero.";
     }
 
+    if (!Number.isInteger(Number(form.quantidade_minima))) {
+      return "A quantidade mínima deve ser um número inteiro.";
+    }
+
+    if (form.quantidade_atual === "" || !Number.isInteger(Number(form.quantidade_atual)) || Number(form.quantidade_atual) < 0) {
+      return "A quantidade em estoque deve ser um número inteiro igual ou maior que zero.";
+    }
+
     if (!form.id_categoria) {
       return "Selecione uma categoria.";
     }
@@ -89,6 +100,7 @@ function Products() {
 
     try {
       const resposta = await fetch(url, {
+        credentials: "include",
         method: metodo,
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +111,7 @@ function Products() {
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        return setErro(dados.mensagem || "Não foi possível salvar.");
+        return setErro(dados.mensagem || dados.erro || "Não foi possível salvar.");
       }
 
       setMensagem(dados.mensagem);
@@ -119,6 +131,8 @@ function Products() {
       unidade_medida: produto.unidade_medida,
       quantidade_minima: produto.quantidade_minima,
       id_categoria: produto.id_categoria,
+      quantidade_atual: String(produto.quantidade_atual ?? 0),
+      local_armazenamento: produto.local_armazenamento || "",
     });
 
     setMensagem("");
@@ -145,13 +159,14 @@ function Products() {
 
     try {
       const resposta = await fetch(`${API}/produtos/${id}`, {
+        credentials: "include",
         method: "DELETE",
       });
 
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        return setErro(dados.mensagem || "Não foi possível excluir.");
+        return setErro(dados.mensagem || dados.erro || "Não foi possível excluir.");
       }
 
       setMensagem(dados.mensagem);
@@ -228,6 +243,30 @@ function Products() {
               />
             </label>
 
+            <label className="management-field" htmlFor="product-stock">
+              Quantidade em estoque
+              <input
+                id="product-stock"
+                type="number"
+                min="0"
+                step="1"
+                name="quantidade_atual"
+                value={form.quantidade_atual}
+                onChange={alterarCampo}
+              />
+            </label>
+
+            <label className="management-field" htmlFor="product-location">
+              Local de armazenamento
+              <input
+                id="product-location"
+                name="local_armazenamento"
+                value={form.local_armazenamento}
+                onChange={alterarCampo}
+                placeholder="Ex.: Prateleira A"
+              />
+            </label>
+
             <label className="management-field" htmlFor="product-category">
               Categoria
               <select
@@ -294,7 +333,9 @@ function Products() {
                   <th>Tamanho</th>
                   <th>Unidade</th>
                   <th>Mínimo</th>
+                  <th>Estoque</th>
                   <th>Categoria</th>
+                  <th>Local</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -306,7 +347,9 @@ function Products() {
                     <td>{produto.tamanho || "-"}</td>
                     <td>{produto.unidade_medida}</td>
                     <td>{produto.quantidade_minima}</td>
+                    <td>{produto.quantidade_atual ?? 0}</td>
                     <td>{produto.nome_categoria}</td>
+                    <td>{produto.local_armazenamento || "—"}</td>
 
                     <td>
                       <div className="management-row-actions">
