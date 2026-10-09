@@ -22,3 +22,7 @@ Depois, reinicie o backend e entre novamente na conta para atualizar a sessão. 
 ## Acesso da Assistente Social
 
 Contas cujo cargo seja **Assistente social** podem acessar somente Gestantes, Triagem Social, montagem de Kits maternidade e Fila de prioridade. A lista inicial e as rotas do frontend são filtradas por perfil, e o backend também bloqueia chamadas às demais APIs. A consulta de itens disponíveis no estoque é permitida somente para montar kits. Contas administradoras mantêm acesso a todas as áreas.
+
+## Eventos
+
+Na primeira instalação/atualização, execute uma única vez `backend/eventos-schema.sql` no banco configurado no `.env`. A migração adiciona sexo do bebê ao cadastro de gestantes e cria as tabelas de eventos, palestras e participantes, além dos vínculos opcionais de eventos às doações e aos kits. A tela **Eventos** permite cadastrar encontros, associar palestras a colaboradores com cargo de psicólogo, registrar presença de gestantes e vincular kits entregues. Ao registrar participante, o sexo do bebê é mostrado a partir do cadastro da gestante. Administradores e Assistentes Sociais podem gerenciar eventos.

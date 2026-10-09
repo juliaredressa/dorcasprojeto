@@ -3,6 +3,7 @@ const allowedAssistenteSocialRoutes = [
     { method: null, pattern: /^\/api\/triagens(?:\/|$)/ },
     { method: null, pattern: /^\/api\/kits(?:\/|$)/ },
     { method: null, pattern: /^\/api\/fila-prioridade(?:\/|$)/ },
+    { method: null, pattern: /^\/api\/eventos(?:\/|$)/ },
     { method: "GET", pattern: /^\/api\/doacoes\/itens-disponiveis$/ }
 ];
 

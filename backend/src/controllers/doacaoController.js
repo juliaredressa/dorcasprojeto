@@ -38,12 +38,16 @@ const listarDoacoes = async (req, res) => {
                 d.id_doacao,
                 d.data_doacao,
                 d.id_funcionario,
-                pf.nome AS nome_funcionario
+                pf.nome AS nome_funcionario,
+                d.id_evento,
+                e.nome_evento
             FROM doacao d
             INNER JOIN funcionario f
                 ON d.id_funcionario = f.id_pessoa
             INNER JOIN pessoa pf
                 ON f.id_pessoa = pf.id_pessoa
+            LEFT JOIN evento e
+                ON e.id_evento = d.id_evento
             ORDER BY d.data_doacao DESC
         `);
 
@@ -98,12 +102,16 @@ const buscarDoacao = (req, res) => {
             d.id_doacao,
             d.data_doacao,
             d.id_funcionario,
-            pf.nome AS nome_funcionario
+            pf.nome AS nome_funcionario,
+            d.id_evento,
+            e.nome_evento
         FROM doacao d
         INNER JOIN funcionario f
             ON d.id_funcionario = f.id_pessoa
         INNER JOIN pessoa pf
             ON f.id_pessoa = pf.id_pessoa
+        LEFT JOIN evento e
+            ON e.id_evento = d.id_evento
         WHERE d.id_doacao = ?
     `;
 
@@ -152,6 +160,7 @@ const cadastrarDoacao = async (req, res) => {
     const {
         data_doacao,
         id_funcionario,
+        id_evento,
         itens
     } = req.body;
 
@@ -201,19 +210,32 @@ const cadastrarDoacao = async (req, res) => {
             });
         }
 
+        if (id_evento) {
+            const [eventos] = await conexao.query(
+                "SELECT id_evento FROM evento WHERE id_evento = ?",
+                [id_evento]
+            );
+            if (eventos.length === 0) {
+                await conexao.rollback();
+                return res.status(404).json({ erro: "Evento não encontrado." });
+            }
+        }
+
         // REGISTRAR A DOAÇÃO
         const [resultadoDoacao] = await conexao.query(
             `
             INSERT INTO doacao
             (
                 data_doacao,
-                id_funcionario
+                id_funcionario,
+                id_evento
             )
-            VALUES (?, ?)
+            VALUES (?, ?, ?)
             `,
             [
                 data_doacao,
-                id_funcionario
+                id_funcionario,
+                id_evento || null
             ]
         );
 

@@ -17,7 +17,9 @@ const listarKits = (req, res) => {
             k.id_gestante,
             pg.nome AS nome_gestante,
             k.id_funcionario,
-            pf.nome AS nome_funcionario
+            pf.nome AS nome_funcionario,
+            k.id_evento,
+            e.nome_evento
         FROM kit_maternidade k
         INNER JOIN gestante g
             ON k.id_gestante = g.id_pessoa
@@ -27,6 +29,8 @@ const listarKits = (req, res) => {
             ON k.id_funcionario = f.id_pessoa
         INNER JOIN pessoa pf
             ON f.id_pessoa = pf.id_pessoa
+        LEFT JOIN evento e
+            ON e.id_evento = k.id_evento
         ORDER BY k.id_kit DESC
     `;
 
@@ -55,7 +59,9 @@ const buscarKit = (req, res) => {
             k.id_gestante,
             pg.nome AS nome_gestante,
             k.id_funcionario,
-            pf.nome AS nome_funcionario
+            pf.nome AS nome_funcionario,
+            k.id_evento,
+            e.nome_evento
         FROM kit_maternidade k
         INNER JOIN gestante g
             ON k.id_gestante = g.id_pessoa
@@ -65,6 +71,8 @@ const buscarKit = (req, res) => {
             ON k.id_funcionario = f.id_pessoa
         INNER JOIN pessoa pf
             ON f.id_pessoa = pf.id_pessoa
+        LEFT JOIN evento e
+            ON e.id_evento = k.id_evento
         WHERE k.id_kit = ?
     `;
 
@@ -116,6 +124,7 @@ const cadastrarKit = async (req, res) => {
         data_entrega,
         id_gestante,
         id_funcionario,
+        id_evento,
         itens
     } = req.body;
 
@@ -184,6 +193,17 @@ const cadastrarKit = async (req, res) => {
             });
         }
 
+        if (id_evento) {
+            const [eventos] = await conexao.query(
+                "SELECT id_evento FROM evento WHERE id_evento = ?",
+                [id_evento]
+            );
+            if (eventos.length === 0) {
+                await conexao.rollback();
+                return res.status(404).json({ erro: "Evento não encontrado." });
+            }
+        }
+
         // VERIFICAR TODOS OS ITENS ANTES DE CRIAR O KIT
         for (const item of itens) {
             const [itensEncontrados] = await conexao.query(
@@ -213,16 +233,18 @@ const cadastrarKit = async (req, res) => {
                 status,
                 data_entrega,
                 id_gestante,
-                id_funcionario
+                id_funcionario,
+                id_evento
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             `,
             [
                 data_montagem || null,
                 status,
                 data_entrega || null,
                 id_gestante,
-                id_funcionario
+                id_funcionario,
+                id_evento || null
             ]
         );
 

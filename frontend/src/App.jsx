@@ -4,6 +4,7 @@ import Home from './components/pages/home/Home';
 import ModulePage from './components/pages/modules/ModulePage';
 import Pregnants from './components/pages/pregnants/Pregnants';
 import Products from './components/pages/products/Products';
+import Eventos from './components/pages/events/Eventos';
 import Access from './components/pages/auth/Access';
 import { API_BASE } from './api';
 import { canAccessPath } from './accessControl';
@@ -104,6 +105,7 @@ function App() {
           <Route path="/fila-prioridade" element={<ModulePage module="fila" />} />
           <Route path="/kits" element={<ModulePage module="kits" />} />
           <Route path="/triagem" element={<ModulePage module="triagem" />} />
+          <Route path="/eventos" element={<Eventos />} />
           <Route path="/" element={<Home />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

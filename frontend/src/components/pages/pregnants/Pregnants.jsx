@@ -13,7 +13,19 @@ const formularioVazio = {
   grau_vulnerabilidade: "",
   data_cadastro: "",
   situacao: "ATIVA",
+  sexo_bebe: "NAO_INFORMADO",
 };
+
+const sexosBebe = [
+  { value: "FEMININO", label: "Feminino" },
+  { value: "MASCULINO", label: "Masculino" },
+  { value: "AINDA_NAO_SEI", label: "Ainda não sabe" },
+  { value: "NAO_INFORMADO", label: "Não informado" },
+];
+
+function rotuloSexoBebe(valor) {
+  return sexosBebe.find((sexo) => sexo.value === valor)?.label || "Não informado";
+}
 
 function formatarCpf(valor) {
   return valor
@@ -102,6 +114,7 @@ function Pregnants() {
       grau_vulnerabilidade: grauVulnerabilidade,
       data_cadastro: formulario.data_cadastro,
       situacao: formulario.situacao,
+      sexo_bebe: formulario.sexo_bebe,
     };
 
     setSalvando(true);
@@ -138,6 +151,7 @@ function Pregnants() {
       grau_vulnerabilidade: String(gestante.grau_vulnerabilidade ?? ""),
       data_cadastro: formatarData(gestante.data_cadastro) === "—" ? "" : formatarData(gestante.data_cadastro),
       situacao: gestante.situacao || "ATIVA",
+      sexo_bebe: gestante.sexo_bebe || "NAO_INFORMADO",
     });
 
     setEditando(gestante.id_pessoa);
@@ -336,6 +350,21 @@ function Pregnants() {
                   <option value="ENCERRADA">ENCERRADA</option>
                 </select>
               </label>
+
+              <label className="campo" htmlFor="pregnant-baby-sex">
+                Sexo do bebê
+                <select
+                  id="pregnant-baby-sex"
+                  name="sexo_bebe"
+                  value={formulario.sexo_bebe}
+                  onChange={handleChange}
+                  required
+                >
+                  {sexosBebe.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <div className="management-actions">
@@ -381,6 +410,7 @@ function Pregnants() {
                   <th>Vulnerabilidade</th>
                   <th>Cadastro</th>
                   <th>Situação</th>
+                  <th>Sexo do bebê</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -388,13 +418,13 @@ function Pregnants() {
               <tbody>
                 {carregando ? (
                   <tr>
-                    <td colSpan="7" className="management-empty">
+                    <td colSpan="8" className="management-empty">
                       Carregando gestantes...
                     </td>
                   </tr>
                 ) : gestantes.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="management-empty">
+                    <td colSpan="8" className="management-empty">
                       Nenhuma gestante cadastrada.
                     </td>
                   </tr>
@@ -412,6 +442,7 @@ function Pregnants() {
                           {gestante.grau_vulnerabilidade}
                         </span>
                       </td>
+                      <td>{rotuloSexoBebe(gestante.sexo_bebe)}</td>
 
                       <td>{formatarData(gestante.data_cadastro)}</td>
 

@@ -111,6 +111,10 @@
   gap: 16px 18px;
 }
 
+.management-field--full {
+  grid-column: 1 / -1;
+}
+
 .management-form-grid--products {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -410,6 +414,79 @@
 .management-status--encerrada {
   color: #a14f54;
   background: #fbe9e6;
+}
+
+.event-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.event-list-card {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--home-border);
+  border-radius: 6px;
+  color: var(--home-ink);
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.event-list-card:hover,
+.event-list-card--active {
+  border-color: #dfa5ba;
+  background: #fff7f9;
+}
+
+.event-list-card strong {
+  font-size: 13px;
+}
+
+.event-list-card span,
+.event-list-card small {
+  color: var(--home-muted);
+  font-size: 11px;
+}
+
+.event-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.event-summary span {
+  padding: 6px 9px;
+  border-radius: 4px;
+  color: #6e3d55;
+  background: #fff0f4;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.event-record-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.event-record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f4eaed;
+  color: #624f59;
+  font-size: 11px;
+}
+
+.event-record-row:last-child {
+  border-bottom: 0;
 }
 
 .management-vulnerability {

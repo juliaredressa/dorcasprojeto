@@ -66,6 +66,14 @@ export const moduleConfig = {
     fields: [
       { name: 'data_doacao', label: 'Data da doação', type: 'date', required: true },
       {
+        name: 'id_evento',
+        label: 'Evento relacionado',
+        type: 'resource-select',
+        optionsApiPath: '/eventos',
+        optionValue: 'id_evento',
+        optionLabel: 'nome_evento',
+      },
+      {
         name: 'id_funcionario',
         label: 'Colaborador responsável',
         type: 'resource-select',
@@ -79,6 +87,7 @@ export const moduleConfig = {
       { key: 'id_doacao', label: 'Nº' },
       { key: 'data_doacao', label: 'Data', type: 'date' },
       { key: 'nome_funcionario', label: 'Colaborador responsável' },
+      { key: 'nome_evento', label: 'Evento' },
       { key: 'itens', label: 'Itens', type: 'items' },
     ],
   },
@@ -142,6 +151,14 @@ export const moduleConfig = {
       { name: 'data_entrega', label: 'Data de entrega', type: 'date' },
       { name: 'id_gestante', label: 'ID da gestante', type: 'number', min: 1, required: true },
       { name: 'id_funcionario', label: 'ID do colaborador', type: 'number', min: 1, required: true },
+      {
+        name: 'id_evento',
+        label: 'Evento relacionado',
+        type: 'resource-select',
+        optionsApiPath: '/eventos',
+        optionValue: 'id_evento',
+        optionLabel: 'nome_evento',
+      },
     ],
     editFields: [
       { name: 'status', label: 'Status do kit', required: true },
@@ -153,6 +170,7 @@ export const moduleConfig = {
       { key: 'status', label: 'Status', type: 'status' },
       { key: 'data_montagem', label: 'Montagem', type: 'date' },
       { key: 'data_entrega', label: 'Entrega', type: 'date' },
+      { key: 'nome_evento', label: 'Evento' },
     ],
   },
   triagem: {

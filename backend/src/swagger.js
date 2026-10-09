@@ -21,7 +21,8 @@ module.exports = {
     { name: 'Fila de prioridade', description: 'Gerenciamento da fila de prioridade das gestantes.' },
     { name: 'Kits', description: 'Montagem, consulta e entrega de kits maternidade.' },
     { name: 'Autenticação', description: 'Login, sessão e alteração de senha.' },
-    { name: 'Triagens', description: 'Cadastro e gerenciamento de triagens sociais.' }
+    { name: 'Triagens', description: 'Cadastro e gerenciamento de triagens sociais.' },
+    { name: 'Eventos', description: 'Eventos, palestras, participação de gestantes, doações e entrega de kits.' }
   ],
   paths: {
     '/api/categorias': {
@@ -300,7 +301,8 @@ module.exports = {
           dpp: { type: 'string', format: 'date' },
           grau_vulnerabilidade: { type: 'integer', minimum: 1, maximum: 5 },
           data_cadastro: { type: 'string', format: 'date' },
-          situacao: { type: 'string' }
+          situacao: { type: 'string' },
+          sexo_bebe: { type: 'string', enum: ['FEMININO', 'MASCULINO', 'AINDA_NAO_SEI', 'NAO_INFORMADO'] }
         }
       },
       GestanteCadastro: {
@@ -314,7 +316,8 @@ module.exports = {
           dpp: { type: 'string', format: 'date', example: '2026-12-15' },
           grau_vulnerabilidade: { type: 'integer', minimum: 1, maximum: 5, example: 3 },
           data_cadastro: { type: 'string', format: 'date', example: '2026-09-29' },
-          situacao: { type: 'string', example: 'ativa' }
+          situacao: { type: 'string', example: 'ATIVA' },
+          sexo_bebe: { type: 'string', enum: ['FEMININO', 'MASCULINO', 'AINDA_NAO_SEI', 'NAO_INFORMADO'], default: 'NAO_INFORMADO' }
         }
       },
       GestanteAtualizacao: {
@@ -328,7 +331,8 @@ module.exports = {
           dpp: { type: 'string', format: 'date', example: '2026-12-15' },
           grau_vulnerabilidade: { type: 'integer', minimum: 1, maximum: 5, example: 3 },
           data_cadastro: { type: 'string', format: 'date', example: '2026-09-29' },
-          situacao: { type: 'string', example: 'ativa' }
+          situacao: { type: 'string', example: 'ATIVA' },
+          sexo_bebe: { type: 'string', enum: ['FEMININO', 'MASCULINO', 'AINDA_NAO_SEI', 'NAO_INFORMADO'], default: 'NAO_INFORMADO' }
         }
       },
       Produto: {
@@ -537,6 +541,102 @@ Object.assign(module.exports.paths, {
         404: responseRef('NaoEncontrado'),
         500: responseRef('ErroServidor')
       }
+    }
+  },
+  '/api/eventos': {
+    get: {
+      tags: ['Eventos'],
+      summary: 'Lista eventos com totais de palestras, participantes, doações e kits',
+      responses: {
+        200: jsonResponse('Eventos encontrados.', { type: 'array', items: schemaRef('Evento') }),
+        500: responseRef('ErroServidor')
+      }
+    },
+    post: {
+      tags: ['Eventos'],
+      summary: 'Cadastra um evento',
+      requestBody: requestBodyRef('EventoInput'),
+      responses: {
+        201: jsonResponse('Evento cadastrado.', schemaRef('EventoResultado')),
+        400: responseRef('ErroRequisicao'),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
+  '/api/eventos/{id}': {
+    parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+    get: {
+      tags: ['Eventos'],
+      summary: 'Consulta evento, palestras, participantes, doações e kits',
+      responses: {
+        200: jsonResponse('Evento encontrado.', schemaRef('EventoDetalhe')),
+        404: responseRef('NaoEncontrado')
+      }
+    },
+    put: {
+      tags: ['Eventos'],
+      summary: 'Atualiza um evento',
+      requestBody: requestBodyRef('EventoInput'),
+      responses: { 200: jsonResponse('Evento atualizado.', schemaRef('Resultado')), 404: responseRef('NaoEncontrado') }
+    },
+    delete: {
+      tags: ['Eventos'],
+      summary: 'Exclui evento sem excluir as doações e kits associados',
+      responses: { 200: jsonResponse('Evento excluído.', schemaRef('Resultado')), 404: responseRef('NaoEncontrado') }
+    }
+  },
+  '/api/eventos/psicologos': {
+    get: {
+      tags: ['Eventos'],
+      summary: 'Lista colaboradores com cargo de psicólogo',
+      responses: { 200: jsonResponse('Psicólogos encontrados.', { type: 'array', items: { type: 'object', properties: { id_pessoa: { type: 'integer' }, nome: { type: 'string' } } } }) }
+    }
+  },
+  '/api/eventos/gestantes': {
+    get: {
+      tags: ['Eventos'],
+      summary: 'Lista gestantes ativas e o sexo do bebê',
+      responses: { 200: jsonResponse('Gestantes encontradas.', { type: 'array', items: { type: 'object', properties: { id_pessoa: { type: 'integer' }, nome: { type: 'string' }, sexo_bebe: { type: 'string' } } } }) }
+    }
+  },
+  '/api/eventos/kits': {
+    get: {
+      tags: ['Eventos'],
+      summary: 'Lista kits que podem ser associados ao evento',
+      parameters: [{ name: 'id_evento', in: 'query', required: true, schema: { type: 'integer' } }],
+      responses: { 200: jsonResponse('Kits disponíveis encontrados.', { type: 'array', items: schemaRef('Kit') }) }
+    }
+  },
+  '/api/eventos/{id}/palestras': {
+    parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+    post: {
+      tags: ['Eventos'],
+      summary: 'Adiciona palestra ministrada por psicólogo ao evento',
+      requestBody: requestBodyRef('PalestraInput'),
+      responses: { 201: jsonResponse('Palestra adicionada.', schemaRef('EventoResultado')), 400: responseRef('ErroRequisicao'), 404: responseRef('NaoEncontrado') }
+    }
+  },
+  '/api/eventos/{id}/palestras/{idPalestra}': {
+    parameters: [
+      { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+      { name: 'idPalestra', in: 'path', required: true, schema: { type: 'integer' } }
+    ],
+    delete: {
+      tags: ['Eventos'],
+      summary: 'Remove palestra do evento',
+      responses: { 200: jsonResponse('Palestra removida.', schemaRef('Resultado')), 404: responseRef('NaoEncontrado') }
+    }
+  },
+  '/api/eventos/{id}/participantes/{idGestante}': {
+    parameters: [
+      { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+      { name: 'idGestante', in: 'path', required: true, schema: { type: 'integer' } }
+    ],
+    put: {
+      tags: ['Eventos'],
+      summary: 'Registra presença de gestante e eventual entrega de kit',
+      requestBody: requestBodyRef('ParticipanteEventoInput'),
+      responses: { 200: jsonResponse('Participação registrada.', schemaRef('Resultado')), 400: responseRef('ErroRequisicao'), 404: responseRef('NaoEncontrado'), 409: responseRef('Conflito') }
     }
   },
   '/api/doacoes/itens-disponiveis': {
@@ -752,7 +852,9 @@ Object.assign(module.exports.components.schemas, {
       id_doacao: { type: 'integer' },
       data_doacao: { type: 'string', format: 'date' },
       id_funcionario: { type: 'integer' },
-      nome_funcionario: { type: 'string' }
+      nome_funcionario: { type: 'string' },
+      id_evento: { type: 'integer', nullable: true },
+      nome_evento: { type: 'string', nullable: true }
     }
   },
   ItemDoacao: {
@@ -779,6 +881,7 @@ Object.assign(module.exports.components.schemas, {
     properties: {
       data_doacao: { type: 'string', format: 'date', example: '2026-10-06' },
       id_funcionario: { type: 'integer', example: 2 },
+      id_evento: { type: 'integer', nullable: true },
       itens: { type: 'array', minItems: 1, items: schemaRef('ItemDoacao') }
     }
   },
@@ -835,7 +938,9 @@ Object.assign(module.exports.components.schemas, {
       id_gestante: { type: 'integer' },
       nome_gestante: { type: 'string' },
       id_funcionario: { type: 'integer' },
-      nome_funcionario: { type: 'string' }
+      nome_funcionario: { type: 'string' },
+      id_evento: { type: 'integer', nullable: true },
+      nome_evento: { type: 'string', nullable: true }
     }
   },
   KitDetalhe: {
@@ -856,6 +961,7 @@ Object.assign(module.exports.components.schemas, {
       data_entrega: { type: 'string', format: 'date', nullable: true },
       id_gestante: { type: 'integer' },
       id_funcionario: { type: 'integer' },
+      id_evento: { type: 'integer', nullable: true },
       itens: { type: 'array', minItems: 1, items: schemaRef('ItemDoacao') }
     }
   },
@@ -870,6 +976,92 @@ Object.assign(module.exports.components.schemas, {
   ResultadoKit: {
     type: 'object',
     properties: { id_kit: { type: 'integer' }, mensagem: { type: 'string' } }
+  },
+  Evento: {
+    type: 'object',
+    properties: {
+      id_evento: { type: 'integer' },
+      nome_evento: { type: 'string' },
+      descricao: { type: 'string', nullable: true },
+      data_evento: { type: 'string', format: 'date' },
+      horario: { type: 'string', format: 'time', nullable: true },
+      local_evento: { type: 'string', nullable: true },
+      total_palestras: { type: 'integer' },
+      total_inscritas: { type: 'integer' },
+      total_doacoes: { type: 'integer' },
+      total_kits: { type: 'integer' }
+    }
+  },
+  EventoInput: {
+    type: 'object',
+    required: ['nome_evento', 'data_evento'],
+    properties: {
+      nome_evento: { type: 'string', maxLength: 150 },
+      descricao: { type: 'string', nullable: true },
+      data_evento: { type: 'string', format: 'date' },
+      horario: { type: 'string', format: 'time', nullable: true },
+      local_evento: { type: 'string', maxLength: 255, nullable: true }
+    }
+  },
+  PalestraInput: {
+    type: 'object',
+    required: ['titulo', 'id_psicologo'],
+    properties: {
+      titulo: { type: 'string', maxLength: 150 },
+      descricao: { type: 'string', nullable: true },
+      horario: { type: 'string', format: 'time', nullable: true },
+      id_psicologo: { type: 'integer' }
+    }
+  },
+  Palestra: {
+    allOf: [
+      schemaRef('PalestraInput'),
+      {
+        type: 'object',
+        properties: {
+          id_palestra: { type: 'integer' },
+          nome_psicologo: { type: 'string' }
+        }
+      }
+    ]
+  },
+  ParticipanteEventoInput: {
+    type: 'object',
+    properties: {
+      presente: { type: 'boolean', default: true },
+      id_kit: { type: 'integer', nullable: true }
+    }
+  },
+  EventoDetalhe: {
+    allOf: [
+      schemaRef('Evento'),
+      {
+        type: 'object',
+        properties: {
+          palestras: { type: 'array', items: schemaRef('Palestra') },
+          participantes: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id_gestante: { type: 'integer' },
+                nome_gestante: { type: 'string' },
+                sexo_bebe: { type: 'string' },
+                presente: { type: 'boolean' },
+                id_kit: { type: 'integer', nullable: true },
+                status_kit: { type: 'string', nullable: true }
+              }
+            }
+          },
+          doacoes: { type: 'array', items: schemaRef('Doacao') },
+          kits: { type: 'array', items: schemaRef('Kit') }
+        }
+      }
+    ]
+  },
+  EventoResultado: {
+    type: 'object',
+    properties: { id_evento: { type: 'integer' }, id_palestra: { type: 'integer' }, mensagem: { type: 'string' } }
   },
   Triagem: {
     type: 'object',

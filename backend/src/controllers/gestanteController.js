@@ -1,5 +1,6 @@
 const db = require('../db');
 const situacoesPermitidas = new Set(["ATIVA", "INATIVA", "ENCERRADA"]);
+const sexosBebePermitidos = new Set(["FEMININO", "MASCULINO", "AINDA_NAO_SEI", "NAO_INFORMADO"]);
 
 // LISTAR TODAS
 const listarGestantes = (req, res) => {
@@ -13,7 +14,8 @@ const listarGestantes = (req, res) => {
             g.dpp,
             g.grau_vulnerabilidade,
             g.data_cadastro,
-            g.situacao
+            g.situacao,
+            g.sexo_bebe
         FROM gestante g
         INNER JOIN pessoa p
             ON g.id_pessoa = p.id_pessoa
@@ -46,7 +48,8 @@ const buscarGestante = (req, res) => {
             g.dpp,
             g.grau_vulnerabilidade,
             g.data_cadastro,
-            g.situacao
+            g.situacao,
+            g.sexo_bebe
         FROM gestante g
         INNER JOIN pessoa p
             ON g.id_pessoa = p.id_pessoa
@@ -81,7 +84,8 @@ const cadastrarGestante = async (req, res) => {
         dpp,
         grau_vulnerabilidade,
         data_cadastro,
-        situacao
+        situacao,
+        sexo_bebe
     } = req.body;
 
     if (
@@ -104,6 +108,10 @@ const cadastrarGestante = async (req, res) => {
             erro: "O grau de vulnerabilidade deve estar entre 1 e 5."
         });
     }
+    const sexoBebe = typeof sexo_bebe === "string" ? sexo_bebe.trim().toUpperCase() : "NAO_INFORMADO";
+    if (!sexosBebePermitidos.has(sexoBebe)) {
+        return res.status(400).json({ erro: "Selecione uma opção válida para o sexo do bebê." });
+    }
 
     const conexao = db.promise();
     let transacaoIniciada = false;
@@ -123,10 +131,10 @@ const cadastrarGestante = async (req, res) => {
         await conexao.query(
             `
                 INSERT INTO gestante
-                (id_pessoa, dpp, grau_vulnerabilidade, data_cadastro, situacao)
-                VALUES (?, ?, ?, ?, ?)
+                (id_pessoa, dpp, grau_vulnerabilidade, data_cadastro, situacao, sexo_bebe)
+                VALUES (?, ?, ?, ?, ?, ?)
                 `,
-            [pessoa.insertId, dpp, grauVulnerabilidade, data_cadastro, situacao]
+            [pessoa.insertId, dpp, grauVulnerabilidade, data_cadastro, situacao, sexoBebe]
         );
 
         await conexao.commit();
@@ -168,7 +176,8 @@ const atualizarGestante = async (req, res) => {
         dpp,
         grau_vulnerabilidade,
         data_cadastro,
-        situacao
+        situacao,
+        sexo_bebe
     } = req.body;
 
     if (
@@ -190,6 +199,10 @@ const atualizarGestante = async (req, res) => {
         return res.status(400).json({
             erro: "O grau de vulnerabilidade deve estar entre 1 e 5."
         });
+    }
+    const sexoBebe = typeof sexo_bebe === "string" ? sexo_bebe.trim().toUpperCase() : "NAO_INFORMADO";
+    if (!sexosBebePermitidos.has(sexoBebe)) {
+        return res.status(400).json({ erro: "Selecione uma opção válida para o sexo do bebê." });
     }
 
     const conexao = db.promise();
@@ -222,10 +235,10 @@ const atualizarGestante = async (req, res) => {
         await conexao.query(
             `
                 UPDATE gestante
-                SET dpp = ?, grau_vulnerabilidade = ?, data_cadastro = ?, situacao = ?
+                SET dpp = ?, grau_vulnerabilidade = ?, data_cadastro = ?, situacao = ?, sexo_bebe = ?
                 WHERE id_pessoa = ?
                 `,
-            [dpp, grauVulnerabilidade, data_cadastro, situacao, id]
+            [dpp, grauVulnerabilidade, data_cadastro, situacao, sexoBebe, id]
         );
 
         await conexao.commit();

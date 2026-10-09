@@ -4,6 +4,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   ClipboardCheck,
+  CalendarDays,
   Gift,
   HandHeart,
   Heart,
@@ -81,6 +82,15 @@ const areas = [
     action: 'Acessar kits',
   },
   {
+    title: 'Eventos',
+    description: 'Organize encontros, palestras, participantes e entregas de kits.',
+    eyebrow: 'ENCONTROS E ACOLHIMENTO',
+    href: '/eventos',
+    icon: CalendarDays,
+    className: 'home-access-card--eventos',
+    action: 'Acessar eventos',
+  },
+  {
     title: 'Triagens sociais',
     description: 'Registre avaliações e acompanhe as necessidades identificadas.',
     eyebrow: 'ESCUTA E ACOMPANHAMENTO',
@@ -94,7 +104,7 @@ const areas = [
 function Home() {
   const { user } = useOutletContext();
   const visibleAreas = isAssistenteSocial(user)
-    ? areas.filter(({ href }) => ['/gestante', '/triagem', '/kits', '/fila-prioridade'].includes(href))
+    ? areas.filter(({ href }) => ['/gestante', '/triagem', '/kits', '/fila-prioridade', '/eventos'].includes(href))
     : areas;
 
   return (

@@ -3,6 +3,7 @@ const assistenteSocialRoutes = [
   '/triagem',
   '/kits',
   '/fila-prioridade',
+  '/eventos',
 ];
 
 function normalize(value) {
