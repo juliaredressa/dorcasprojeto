@@ -1,3 +1,4 @@
+const { normalizarItens } = require('../services/itensService');
 const db = require("../database");
 
 const {
@@ -125,8 +126,15 @@ const cadastrarKit = async (req, res) => {
         id_gestante,
         id_funcionario,
         id_evento,
-        itens
+        itens: itensRecebidos
     } = req.body;
+
+    let itens;
+    try {
+        itens = normalizarItens(itensRecebidos);
+    } catch (erro) {
+        return res.status(400).json({ erro: erro.message });
+    }
 
     if (
         !status ||
@@ -138,18 +146,6 @@ const cadastrarKit = async (req, res) => {
         return res.status(400).json({
             erro: "Preencha os campos obrigatórios e informe pelo menos um item."
         });
-    }
-
-    for (const item of itens) {
-        if (
-            !item.id_item ||
-            !Number.isInteger(Number(item.quantidade)) ||
-            Number(item.quantidade) <= 0
-        ) {
-            return res.status(400).json({
-                erro: "Todos os itens devem possuir id e quantidade maior que zero."
-            });
-        }
     }
 
     let conexao;
@@ -369,6 +365,7 @@ const excluirKit = async (req, res) => {
             SELECT id_kit
             FROM kit_maternidade
             WHERE id_kit = ?
+            FOR UPDATE
             `,
             [id]
         );
@@ -389,6 +386,7 @@ const excluirKit = async (req, res) => {
                 quantidade
             FROM item_kit
             WHERE id_kit = ?
+            ORDER BY id_item
             `,
             [id]
         );

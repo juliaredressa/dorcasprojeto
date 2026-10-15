@@ -105,7 +105,9 @@ function Products() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(editando
+          ? Object.fromEntries(Object.entries(form).filter(([key]) => key !== 'quantidade_atual'))
+          : form),
       });
 
       const dados = await resposta.json();
@@ -244,9 +246,10 @@ function Products() {
             </label>
 
             <label className="management-field" htmlFor="product-stock">
-              Quantidade em estoque
+              {editando ? 'Estoque atual (ajuste na tela Estoque)' : 'Quantidade inicial em estoque'}
               <input
                 id="product-stock"
+                readOnly={Boolean(editando)}
                 type="number"
                 min="0"
                 step="1"
