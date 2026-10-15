@@ -642,7 +642,8 @@ Object.assign(module.exports.paths, {
   '/api/doacoes/itens-disponiveis': {
     get: {
       tags: ['Doações'],
-      summary: 'Lista itens com estoque disponível para selecionar na doação',
+      summary: 'Lista produtos para doações ou itens com saldo para kits',
+      parameters: [{ name: 'todos', in: 'query', description: 'Inclui produtos com saldo zero no cadastro de doações.', schema: { type: 'boolean', default: false } }],
       responses: {
         200: jsonResponse('Itens disponíveis encontrados.', {
           type: 'array',
@@ -651,8 +652,9 @@ Object.assign(module.exports.paths, {
             properties: {
               id_item: { type: 'integer' },
               nome_item: { type: 'string' },
+              tamanho: { type: 'string', nullable: true },
               unidade_medida: { type: 'string' },
-              quantidade_atual: { type: 'integer', minimum: 1 }
+              quantidade_atual: { type: 'integer', minimum: 0 }
             }
           }
         }),

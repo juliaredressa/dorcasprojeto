@@ -63,6 +63,8 @@ export const moduleConfig = {
     editable: false,
     deletable: true,
     withItems: true,
+    itemsApiPath: '/doacoes/itens-disponiveis?todos=true',
+    receivesStock: true,
     fields: [
       { name: 'data_doacao', label: 'Data da doação', type: 'date', required: true },
       {

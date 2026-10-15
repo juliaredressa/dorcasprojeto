@@ -173,7 +173,7 @@ function ResourcePage({ config }) {
       let availableItems = [];
       if (config.withItems) {
         try {
-          availableItems = await request('/doacoes/itens-disponiveis');
+          availableItems = await request(config.itemsApiPath || '/doacoes/itens-disponiveis');
           if (!Array.isArray(availableItems)) {
             throw new Error('A resposta dos itens está inválida.');
           }
@@ -192,7 +192,7 @@ function ResourcePage({ config }) {
     return () => {
       active = false;
     };
-  }, [config.apiPath]);
+  }, [config.apiPath, config.withItems, config.itemsApiPath, config.fields]);
 
   const currentFields = editingId !== null && config.editFields ? config.editFields : config.fields;
 
@@ -255,6 +255,12 @@ function ResourcePage({ config }) {
       return;
     }
 
+    if (config.withItems && editingId === null && new Set(itemRows.map((item) => String(item.id_item))).size !== itemRows.length) {
+      setError('Selecione cada produto apenas uma vez e informe a quantidade total.');
+      setSaving(false);
+      return;
+    }
+
     try {
       const path = editingId === null ? config.apiPath : `${config.apiPath}/${editingId}`;
       const data = await request(path, {
@@ -266,19 +272,23 @@ function ResourcePage({ config }) {
       setMessage(data.mensagem || `${config.singular} salvo com sucesso.`);
       resetForm();
       await loadRows();
-      if (config.withItems) {
-        try {
-          const availableItems = await request('/doacoes/itens-disponiveis');
-          setSelectOptions((current) => ({ ...current, __items: availableItems }));
-          setOptionsError('');
-        } catch (requestError) {
-          setOptionsError(`Itens da doação: ${requestError.message}`);
-        }
-      }
+      await refreshItems();
     } catch (requestError) {
       setError(requestError.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function refreshItems() {
+    if (!config.withItems) return;
+    try {
+      const availableItems = await request(config.itemsApiPath || '/doacoes/itens-disponiveis');
+      if (!Array.isArray(availableItems)) throw new Error('A resposta dos itens está inválida.');
+      setSelectOptions((current) => ({ ...current, __items: availableItems }));
+      setOptionsError('');
+    } catch (requestError) {
+      setOptionsError(`Itens: ${requestError.message}`);
     }
   }
 
@@ -303,6 +313,7 @@ function ResourcePage({ config }) {
       const data = await request(`${config.apiPath}/${row[config.idField]}`, { method: 'DELETE' });
       setMessage(data.mensagem || `${config.singular} excluído(a) com sucesso.`);
       await loadRows();
+      await refreshItems();
     } catch (requestError) {
       setError(requestError.message);
     }
@@ -442,8 +453,11 @@ function ResourcePage({ config }) {
               <legend>Itens da {config.singular}</legend>
               {selectOptions.__items?.length === 0 && !optionsError && (
                 <p className="management-empty">
-                  Nenhum produto tem estoque disponível. Registre uma entrada na tela de{' '}
-                  <a href="/estoque">Estoque</a>.
+                  {config.receivesStock ? (
+                    <>Nenhum produto cadastrado. Cadastre os itens na tela de <a href="/produtos">Produtos</a>.</>
+                  ) : (
+                    <>Nenhum produto tem estoque disponível. Registre uma entrada na tela de <a href="/estoque">Estoque</a>.</>
+                  )}
                 </p>
               )}
               <div className="module-items-list">
@@ -464,11 +478,15 @@ function ResourcePage({ config }) {
                                     <option value="">
                                       {selectOptions.__items?.length
                                         ? 'Selecione um item'
-                                        : 'Nenhum produto com estoque disponível'}
+                                        : config.receivesStock ? 'Nenhum produto cadastrado' : 'Nenhum produto com estoque disponível'}
                                     </option>
                         {(selectOptions.__items || []).map((option) => (
-                          <option key={option.id_item} value={option.id_item}>
-                            {option.nome_item} — estoque: {option.quantidade_atual} {option.unidade_medida}
+                          <option
+                            key={option.id_item}
+                            value={option.id_item}
+                            disabled={itemRows.some((other, otherIndex) => otherIndex !== index && String(other.id_item) === String(option.id_item))}
+                          >
+                            {option.nome_item}{option.tamanho ? ` — ${option.tamanho}` : ''} — estoque: {option.quantidade_atual} {option.unidade_medida}
                           </option>
                         ))}
                       </select>
@@ -484,7 +502,7 @@ function ResourcePage({ config }) {
                         <input
                           id={`${config.apiPath}-quantity-${index}`}
                           min="1"
-                          max={selectedStockItem?.quantidade_atual}
+                          max={config.receivesStock ? undefined : selectedStockItem?.quantidade_atual}
                           required
                           type="number"
                           value={item.quantidade}

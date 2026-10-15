@@ -24,31 +24,18 @@ const adicionarAoEstoque = async (conexao, idItem, quantidade) => {
 
 // Retira quantidade do estoque
 const retirarDoEstoque = async (conexao, idItem, quantidade) => {
-    const [estoques] = await conexao.query(
-        `
-        SELECT quantidade_atual
-        FROM estoque
-        WHERE id_item = ?
-        `,
-        [idItem]
+    const [resultado] = await conexao.query(
+        `UPDATE estoque
+         SET quantidade_atual = quantidade_atual - ?
+         WHERE id_item = ? AND quantidade_atual >= ?`,
+        [quantidade, idItem, quantidade]
     );
 
-    if (estoques.length === 0) {
-        throw new Error(`Não existe estoque para o item ${idItem}.`);
+    if (resultado.affectedRows !== 1) {
+        const erro = new Error(`Estoque insuficiente para o item ${idItem}.`);
+        erro.code = 'ESTOQUE_INSUFICIENTE';
+        throw erro;
     }
-
-    if (estoques[0].quantidade_atual < quantidade) {
-        throw new Error(`Estoque insuficiente para o item ${idItem}.`);
-    }
-
-    await conexao.query(
-        `
-        UPDATE estoque
-        SET quantidade_atual = quantidade_atual - ?
-        WHERE id_item = ?
-        `,
-        [quantidade, idItem]
-    );
 
     await conexao.query(
         `

@@ -1,21 +1,25 @@
+const { normalizarItens } = require('../services/itensService');
 const db = require("../database");
 
 const {
-    adicionarAoEstoque
+    adicionarAoEstoque,
+    retirarDoEstoque
 } = require("../services/estoqueService");
 
 const listarItensDisponiveis = async (req, res) => {
     try {
+        const incluirZerados = req.query.todos === "true";
         const [itens] = await db.promise().query(`
             SELECT
                 i.id_item,
                 i.nome_item,
+                i.tamanho,
                 i.unidade_medida,
-                e.quantidade_atual
+                COALESCE(e.quantidade_atual, 0) AS quantidade_atual
             FROM item_doacao i
-            INNER JOIN estoque e
+            LEFT JOIN estoque e
                 ON e.id_item = i.id_item
-            WHERE e.quantidade_atual > 0
+            ${incluirZerados ? "" : "WHERE e.quantidade_atual > 0"}
             ORDER BY i.nome_item
         `);
 
@@ -161,8 +165,15 @@ const cadastrarDoacao = async (req, res) => {
         data_doacao,
         id_funcionario,
         id_evento,
-        itens
+        itens: itensRecebidos
     } = req.body;
+
+    let itens;
+    try {
+        itens = normalizarItens(itensRecebidos);
+    } catch (erro) {
+        return res.status(400).json({ erro: erro.message });
+    }
 
     if (
         !data_doacao ||
@@ -173,18 +184,6 @@ const cadastrarDoacao = async (req, res) => {
         return res.status(400).json({
             erro: "Preencha os dados da doação e informe pelo menos um item."
         });
-    }
-
-    for (const item of itens) {
-        if (
-            !item.id_item ||
-            !Number.isInteger(Number(item.quantidade)) ||
-            Number(item.quantidade) <= 0
-        ) {
-            return res.status(400).json({
-                erro: "Todos os itens devem possuir id e quantidade maior que zero."
-            });
-        }
     }
 
     let conexao;
@@ -330,6 +329,7 @@ const excluirDoacao = async (req, res) => {
             SELECT id_doacao
             FROM doacao
             WHERE id_doacao = ?
+            FOR UPDATE
             `,
             [id]
         );
@@ -350,13 +350,14 @@ const excluirDoacao = async (req, res) => {
                 quantidade
             FROM item_doacao_recebida
             WHERE id_doacao = ?
+            ORDER BY id_item
             `,
             [id]
         );
 
-        // DEVOLVER AS QUANTIDADES AO ESTOQUE
+        // Estornar a entrada somente se todos os itens tiverem saldo suficiente.
         for (const item of itens) {
-            await adicionarAoEstoque(
+            await retirarDoEstoque(
                 conexao,
                 item.id_item,
                 item.quantidade
@@ -394,8 +395,10 @@ const excluirDoacao = async (req, res) => {
 
         console.error(erro);
 
-        return res.status(500).json({
-            erro: "Erro ao excluir doação.",
+        return res.status(400).json({
+            erro: erro.code === 'ESTOQUE_INSUFICIENTE'
+                ? 'Não é possível excluir a doação: o estoque atual não permite estornar todos os itens recebidos.'
+                : 'Erro ao excluir doação.',
             detalhe: erro.message
         });
     } finally {
