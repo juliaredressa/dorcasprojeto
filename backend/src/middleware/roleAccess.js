@@ -4,6 +4,7 @@ const allowedAssistenteSocialRoutes = [
     { method: null, pattern: /^\/api\/kits(?:\/|$)/ },
     { method: null, pattern: /^\/api\/fila-prioridade(?:\/|$)/ },
     { method: null, pattern: /^\/api\/eventos(?:\/|$)/ },
+    { method: "GET", pattern: /^\/api\/colaboradores\/responsaveis$/ },
     { method: "GET", pattern: /^\/api\/doacoes\/itens-disponiveis$/ }
 ];
 

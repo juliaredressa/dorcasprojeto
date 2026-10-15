@@ -3,6 +3,7 @@ import {
   ArrowDownToLine,
   ArrowLeftRight,
   ArrowUpFromLine,
+  Baby,
   ClipboardCheck,
   Eye,
   Gift,
@@ -81,10 +82,32 @@ function emptyForm(fields) {
   return Object.fromEntries(fields.map(({ name }) => [name, '']));
 }
 
+function emptyItem(config) {
+  return { id_item: '', quantidade: config.itemQuantity === false ? 1 : '' };
+}
+
 function getInputValue(value, type) {
   if (value === null || value === undefined) return '';
   if (type === 'date') return formatDate(value);
   return String(value);
+}
+
+const babySexLabels = {
+  FEMININO: 'Menina',
+  MASCULINO: 'Menino',
+  AINDA_NAO_SEI: 'Ainda não sabe',
+  NAO_INFORMADO: 'Não informado',
+};
+
+function daysUntil(date) {
+  if (!date) return null;
+
+  const target = new Date(`${String(date).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return null;
+
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.ceil((target - startOfToday) / 86_400_000);
 }
 
 function ModulePage({ module }) {
@@ -100,7 +123,7 @@ function ResourcePage({ config }) {
   const Icon = icons[config.icon] || PackageOpen;
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(() => emptyForm(config.fields));
-  const [itemRows, setItemRows] = useState([{ id_item: '', quantidade: '' }]);
+  const [itemRows, setItemRows] = useState(() => [emptyItem(config)]);
   const [selectOptions, setSelectOptions] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -175,7 +198,7 @@ function ResourcePage({ config }) {
 
   function resetForm() {
     setForm(emptyForm(config.fields));
-    setItemRows([{ id_item: '', quantidade: '' }]);
+    setItemRows([emptyItem(config)]);
     setEditingId(null);
   }
 
@@ -209,7 +232,7 @@ function ResourcePage({ config }) {
     if (config.withItems && editingId === null) {
       payload.itens = itemRows.map((item) => ({
         id_item: Number(item.id_item),
-        quantidade: Number(item.quantidade),
+        quantidade: config.itemQuantity === false ? 1 : Number(item.quantidade),
       }));
     }
 
@@ -222,8 +245,12 @@ function ResourcePage({ config }) {
     setError('');
     setMessage('');
 
-    if (config.withItems && editingId === null && itemRows.some((item) => !item.id_item || !item.quantidade || Number(item.quantidade) < 1)) {
-      setError('Selecione um item e informe uma quantidade maior que zero para cada item.');
+    if (config.withItems && editingId === null && itemRows.some((item) => (
+      !item.id_item || (config.itemQuantity !== false && (!item.quantidade || Number(item.quantidade) < 1))
+    ))) {
+      setError(config.itemQuantity === false
+        ? 'Selecione pelo menos um item.'
+        : 'Selecione um item e informe uma quantidade maior que zero para cada item.');
       setSaving(false);
       return;
     }
@@ -335,6 +362,35 @@ function ResourcePage({ config }) {
     );
   }
 
+  function renderGestanteAlert() {
+    if (!config.gestanteAlertDays || !form.id_gestante) return null;
+
+    const gestante = selectOptions.id_gestante?.find(
+      (option) => String(option.id_pessoa) === String(form.id_gestante)
+    );
+    if (!gestante) return null;
+
+    const remainingDays = daysUntil(gestante.dpp);
+    const isDueDateNear = remainingDays !== null && remainingDays <= config.gestanteAlertDays;
+    const dueDateLabel = remainingDays === null
+      ? 'DPP não informada'
+      : remainingDays < 0
+        ? `DPP vencida há ${Math.abs(remainingDays)} dia(s)`
+        : remainingDays === 0
+          ? 'DPP prevista para hoje'
+          : `DPP em ${remainingDays} dia(s)`;
+
+    return (
+      <aside className={`management-gestante-summary${isDueDateNear ? ' management-gestante-summary--alert' : ''}`}>
+        <div>
+          <strong>{gestante.nome}</strong>
+          <span><Baby aria-hidden="true" size={15} /> Bebê: {babySexLabels[gestante.sexo_bebe] || 'Não informado'}</span>
+        </div>
+        <span className="management-gestante-due-date">{dueDateLabel}</span>
+      </aside>
+    );
+  }
+
   function renderCell(row, column) {
     const value = row[column.key];
     if (column.type === 'items') {
@@ -379,6 +435,7 @@ function ResourcePage({ config }) {
           <div className={`management-form-grid${currentFields.length >= 5 ? ' management-form-grid--products' : ''}`}>
             {currentFields.map(renderField)}
           </div>
+          {renderGestanteAlert()}
 
           {config.withItems && editingId === null && (
             <fieldset className="module-items-fieldset">
@@ -421,18 +478,20 @@ function ResourcePage({ config }) {
                         </span>
                       )}
                     </label>
-                    <label className="management-field" htmlFor={`${config.apiPath}-quantity-${index}`}>
-                      Quantidade
-                      <input
-                        id={`${config.apiPath}-quantity-${index}`}
-                        min="1"
-                        max={selectedStockItem?.quantidade_atual}
-                        required
-                        type="number"
-                        value={item.quantidade}
-                        onChange={(event) => updateItem(index, 'quantidade', event.target.value)}
-                      />
-                    </label>
+                    {config.itemQuantity !== false && (
+                      <label className="management-field" htmlFor={`${config.apiPath}-quantity-${index}`}>
+                        Quantidade
+                        <input
+                          id={`${config.apiPath}-quantity-${index}`}
+                          min="1"
+                          max={selectedStockItem?.quantidade_atual}
+                          required
+                          type="number"
+                          value={item.quantidade}
+                          onChange={(event) => updateItem(index, 'quantidade', event.target.value)}
+                        />
+                      </label>
+                    )}
                     <button
                       aria-label={`Remover item ${index + 1}`}
                       className="management-icon-button module-item-remove"
@@ -449,7 +508,7 @@ function ResourcePage({ config }) {
               </div>
               <button
                 className="management-button management-button--secondary module-add-item"
-                onClick={() => setItemRows((current) => [...current, { id_item: '', quantidade: '' }])}
+                onClick={() => setItemRows((current) => [...current, emptyItem(config)])}
                 type="button"
               >
                 <Plus size={15} /> Adicionar item

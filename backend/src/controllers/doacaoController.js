@@ -187,9 +187,10 @@ const cadastrarDoacao = async (req, res) => {
         }
     }
 
-    const conexao = db.promise();
+    let conexao;
 
     try {
+        conexao = await db.promise().getConnection();
         await conexao.beginTransaction();
 
         // VERIFICAR FUNCIONÁRIO
@@ -297,14 +298,18 @@ const cadastrarDoacao = async (req, res) => {
         });
 
     } catch (erro) {
-        await conexao.rollback();
+        if (conexao) {
+            await conexao.rollback();
+        }
 
         console.error(erro);
 
-        res.status(500).json({
+        return res.status(500).json({
             erro: "Erro ao cadastrar doação.",
             detalhe: erro.message
         });
+    } finally {
+        conexao?.release();
     }
 };
 
@@ -313,9 +318,10 @@ const cadastrarDoacao = async (req, res) => {
 const excluirDoacao = async (req, res) => {
     const { id } = req.params;
 
-    const conexao = db.promise();
+    let conexao;
 
     try {
+        conexao = await db.promise().getConnection();
         await conexao.beginTransaction();
 
         // VERIFICAR SE A DOAÇÃO EXISTE
@@ -382,14 +388,18 @@ const excluirDoacao = async (req, res) => {
         });
 
     } catch (erro) {
-        await conexao.rollback();
+        if (conexao) {
+            await conexao.rollback();
+        }
 
         console.error(erro);
 
-        res.status(500).json({
+        return res.status(500).json({
             erro: "Erro ao excluir doação.",
             detalhe: erro.message
         });
+    } finally {
+        conexao?.release();
     }
 };
 

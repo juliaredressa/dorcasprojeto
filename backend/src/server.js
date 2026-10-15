@@ -55,8 +55,6 @@ app.use(
 
 app.use(
     "/api-docs",
-    requireAuthentication,
-    requireRoleAccess,
     swaggerUi.serve,
     swaggerUi.setup(swaggerDocument)
 );

@@ -1,6 +1,28 @@
 const db = require('../db');
 const pool = require('../databasePool');
 
+exports.listarResponsaveis = (req, res) => {
+    const sql = `
+        SELECT
+            p.id_pessoa,
+            p.nome
+        FROM pessoa p
+        INNER JOIN funcionario f
+            ON p.id_pessoa = f.id_pessoa
+        ORDER BY p.nome
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) {
+            return res.status(500).json({
+                erro: 'Erro ao listar colaboradores responsáveis'
+            });
+        }
+
+        res.json(results);
+    });
+};
+
 exports.listar = (req, res) => {
 
     const sql = `

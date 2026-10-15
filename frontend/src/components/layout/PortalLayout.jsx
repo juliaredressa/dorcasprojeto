@@ -1,12 +1,47 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Heart, Home, KeyRound, LogOut, Save, UserRound, X } from 'lucide-react';
+import {
+  CalendarDays,
+  ChevronDown,
+  ClipboardCheck,
+  Gift,
+  HandHeart,
+  Heart,
+  Home,
+  KeyRound,
+  LayoutDashboard,
+  ListOrdered,
+  LogOut,
+  Menu,
+  PackageOpen,
+  PanelLeftClose,
+  Save,
+  UserRound,
+  UsersRound,
+  Warehouse,
+  X,
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../pages/home/Home.css';
 import { API_BASE } from '../../api';
+import { isAssistenteSocial } from '../../accessControl';
 import './management.css';
 import './account.css';
+import './sidebar.css';
 
-function PortalLayout({ children, contentClassName = '' }) {
+const navigationItems = [
+  { key: 'home', label: 'Início', href: '/', icon: LayoutDashboard },
+  { key: 'gestantes', label: 'Gestantes', href: '/gestante', icon: UsersRound },
+  { key: 'produtos', label: 'Produtos', href: '/produtos', icon: PackageOpen },
+  { key: 'colaboradores', label: 'Colaboradores', href: '/colaboradores', icon: UsersRound },
+  { key: 'doacoes', label: 'Doações', href: '/doacoes', icon: HandHeart },
+  { key: 'estoque', label: 'Estoque', href: '/estoque', icon: Warehouse },
+  { key: 'fila', label: 'Fila de prioridade', href: '/fila-prioridade', icon: ListOrdered },
+  { key: 'kits', label: 'Kits maternidade', href: '/kits', icon: Gift },
+  { key: 'triagem', label: 'Triagens sociais', href: '/triagem', icon: ClipboardCheck },
+  { key: 'eventos', label: 'Eventos', href: '/eventos', icon: CalendarDays },
+];
+
+function PortalLayout({ active, children, contentClassName = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const accountMenuRef = useRef(null);
@@ -23,6 +58,7 @@ function PortalLayout({ children, contentClassName = '' }) {
   const [passwordMessage, setPasswordMessage] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -127,15 +163,66 @@ function PortalLayout({ children, contentClassName = '' }) {
   }
 
   return (
-    <div className="home-page">
-      <header className="home-topbar">
-        <div className="home-brand" aria-label="Dorcas">
+    <div className={`home-page${user && sidebarOpen ? ' home-page--sidebar-open' : ''}`}>
+      {user && (
+        <>
+          {sidebarOpen && (
+            <button
+              aria-label="Fechar menu lateral"
+              className="sidebar-backdrop"
+              onClick={() => setSidebarOpen(false)}
+              type="button"
+            />
+          )}
+          <aside aria-label="Navegação principal" className={`portal-sidebar${sidebarOpen ? ' portal-sidebar--open' : ''}`}>
+            <div className="portal-sidebar-heading">
+              <span className="portal-sidebar-title">Navegação</span>
+              <button
+                aria-label="Fechar menu lateral"
+                className="portal-sidebar-close"
+                onClick={() => setSidebarOpen(false)}
+                type="button"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <nav className="portal-sidebar-nav">
+              {navigationItems
+                .filter(({ href }) => !isAssistenteSocial(user) || ['/', '/gestante', '/triagem', '/kits', '/fila-prioridade', '/eventos'].includes(href))
+                .map(({ key, label, href, icon: Icon }) => (
+                  <Link
+                    aria-current={active === key ? 'page' : undefined}
+                    className={`portal-sidebar-link${active === key ? ' portal-sidebar-link--active' : ''}`}
+                    key={key}
+                    onClick={() => setSidebarOpen(false)}
+                    to={href}
+                  >
+                    <Icon aria-hidden="true" size={18} strokeWidth={1.9} />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+            </nav>
+          </aside>
+        </>
+      )}
+      <header className={`home-topbar${user ? ' home-topbar--with-sidebar' : ''}`}>
+        {user && (
+          <button
+            aria-label={sidebarOpen ? 'Fechar menu lateral' : 'Abrir menu lateral'}
+            className="sidebar-toggle"
+            onClick={() => setSidebarOpen((open) => !open)}
+            type="button"
+          >
+            {sidebarOpen ? <PanelLeftClose size={19} /> : <Menu size={20} />}
+          </button>
+        )}
+        <Link className="home-brand" aria-label="Ir para a página principal" to="/">
           <span className="home-brand-mark"><Heart size={19} fill="currentColor" strokeWidth={1.8} /></span>
           <span className="home-brand-copy">
             <strong>Dorcas</strong>
             <small>gestão com cuidado</small>
           </span>
-        </div>
+        </Link>
 
         <div className="home-topbar-account">
           {user ? (

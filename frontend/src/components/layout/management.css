@@ -105,6 +105,50 @@
   font-weight: 700;
 }
 
+.management-gestante-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #dcebe0;
+  border-radius: 5px;
+  color: #426548;
+  background: #f3faf4;
+  font: 600 12px 'DM Sans', 'Trebuchet MS', sans-serif;
+}
+
+.management-gestante-summary > div {
+  display: grid;
+  gap: 4px;
+}
+
+.management-gestante-summary strong {
+  color: var(--home-ink);
+  font-size: 13px;
+}
+
+.management-gestante-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.management-gestante-summary--alert {
+  border-color: #efc6a0;
+  color: #9a571d;
+  background: #fff6eb;
+}
+
+.management-gestante-due-date {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+}
+
 .management-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

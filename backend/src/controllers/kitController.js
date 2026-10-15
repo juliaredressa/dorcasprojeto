@@ -152,9 +152,10 @@ const cadastrarKit = async (req, res) => {
         }
     }
 
-    const conexao = db.promise();
+    let conexao;
 
     try {
+        conexao = await db.promise().getConnection();
         await conexao.beginTransaction();
 
         // VERIFICAR GESTANTE
@@ -286,13 +287,17 @@ const cadastrarKit = async (req, res) => {
         });
 
     } catch (erro) {
-        await conexao.rollback();
+        if (conexao) {
+            await conexao.rollback();
+        }
 
         console.error(erro);
 
-        res.status(400).json({
+        return res.status(400).json({
             erro: erro.message
         });
+    } finally {
+        conexao?.release();
     }
 };
 
@@ -352,9 +357,10 @@ const atualizarKit = (req, res) => {
 const excluirKit = async (req, res) => {
     const { id } = req.params;
 
-    const conexao = db.promise();
+    let conexao;
 
     try {
+        conexao = await db.promise().getConnection();
         await conexao.beginTransaction();
 
         // VERIFICAR KIT
@@ -421,13 +427,17 @@ const excluirKit = async (req, res) => {
         });
 
     } catch (erro) {
-        await conexao.rollback();
+        if (conexao) {
+            await conexao.rollback();
+        }
 
         console.error(erro);
 
-        res.status(400).json({
+        return res.status(400).json({
             erro: erro.message
         });
+    } finally {
+        conexao?.release();
     }
 };
 

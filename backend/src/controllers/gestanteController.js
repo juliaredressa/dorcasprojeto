@@ -113,10 +113,11 @@ const cadastrarGestante = async (req, res) => {
         return res.status(400).json({ erro: "Selecione uma opção válida para o sexo do bebê." });
     }
 
-    const conexao = db.promise();
+    let conexao;
     let transacaoIniciada = false;
 
     try {
+        conexao = await db.promise().getConnection();
         await conexao.beginTransaction();
         transacaoIniciada = true;
 
@@ -145,7 +146,7 @@ const cadastrarGestante = async (req, res) => {
             mensagem: "Gestante cadastrada com sucesso!"
         });
     } catch (erro) {
-        if (transacaoIniciada) {
+        if (conexao && transacaoIniciada) {
             await conexao.rollback();
         }
 
@@ -157,9 +158,11 @@ const cadastrarGestante = async (req, res) => {
             });
         }
 
-        res.status(500).json({
+        return res.status(500).json({
             erro: "Erro ao cadastrar gestante."
         });
+    } finally {
+        conexao?.release();
     }
 };
 
@@ -205,10 +208,11 @@ const atualizarGestante = async (req, res) => {
         return res.status(400).json({ erro: "Selecione uma opção válida para o sexo do bebê." });
     }
 
-    const conexao = db.promise();
+    let conexao;
     let transacaoIniciada = false;
 
     try {
+        conexao = await db.promise().getConnection();
         await conexao.beginTransaction();
         transacaoIniciada = true;
 
@@ -246,7 +250,7 @@ const atualizarGestante = async (req, res) => {
 
         res.json({ mensagem: "Gestante atualizada com sucesso!" });
     } catch (erro) {
-        if (transacaoIniciada) {
+        if (conexao && transacaoIniciada) {
             await conexao.rollback();
         }
 
@@ -258,7 +262,9 @@ const atualizarGestante = async (req, res) => {
             });
         }
 
-        res.status(500).json({ erro: "Erro ao atualizar gestante." });
+        return res.status(500).json({ erro: "Erro ao atualizar gestante." });
+    } finally {
+        conexao?.release();
     }
 };
 
