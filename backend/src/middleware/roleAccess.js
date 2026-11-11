@@ -5,7 +5,8 @@ const allowedAssistenteSocialRoutes = [
     { method: null, pattern: /^\/api\/fila-prioridade(?:\/|$)/ },
     { method: null, pattern: /^\/api\/eventos(?:\/|$)/ },
     { method: "GET", pattern: /^\/api\/colaboradores\/responsaveis$/ },
-    { method: "GET", pattern: /^\/api\/doacoes\/itens-disponiveis$/ }
+    { method: "GET", pattern: /^\/api\/doacoes\/itens-disponiveis$/ },
+    { method: "GET", pattern: /^\/api\/relatorios\/partos-proximos$/ }
 ];
 
 function normalize(value) {

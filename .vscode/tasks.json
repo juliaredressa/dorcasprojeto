@@ -1,0 +1,54 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Dorcas backend",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"dev"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Dorcas frontend",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"frontend",
+				"run",
+				"dev",
+				"--",
+				"--host",
+				"127.0.0.1"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Redefinir senha Dorcas",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"backend/src/scripts/resetUserPassword.js"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Iniciar redefinicao senha confirmada",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"backend/src/scripts/resetUserPassword.js"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}

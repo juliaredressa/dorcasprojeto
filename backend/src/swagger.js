@@ -22,7 +22,8 @@ module.exports = {
     { name: 'Kits', description: 'Montagem, consulta e entrega de kits maternidade.' },
     { name: 'Autenticação', description: 'Login, sessão e alteração de senha.' },
     { name: 'Triagens', description: 'Cadastro e gerenciamento de triagens sociais.' },
-    { name: 'Eventos', description: 'Eventos, palestras, participação de gestantes, doações e entrega de kits.' }
+    { name: 'Eventos', description: 'Eventos, palestras, participação de gestantes, doações e entrega de kits.' },
+    { name: 'Relatórios', description: 'Relatórios de partos próximos, estoque e histórico de doações.' }
   ],
   paths: {
     '/api/categorias': {
@@ -543,6 +544,58 @@ Object.assign(module.exports.paths, {
       }
     }
   },
+  '/api/relatorios/partos-proximos': {
+    get: {
+      tags: ['Relatórios'],
+      summary: 'Emite relatório de gestantes ativas com parto previsto para os próximos dias',
+      description: 'Considera partos previstos entre hoje e o período informado. O padrão é 30 dias.',
+      security: [{ cookieSession: [] }],
+      parameters: [{
+        name: 'dias',
+        in: 'query',
+        description: 'Quantidade de dias a partir de hoje (0 a 365).',
+        schema: { type: 'integer', minimum: 0, maximum: 365, default: 30 }
+      }],
+      responses: {
+        200: jsonResponse('Relatório de partos próximos.', schemaRef('RelatorioPartosProximos')),
+        400: responseRef('ErroRequisicao'),
+        401: responseRef('NaoAutorizado'),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
+  '/api/relatorios/estoque': {
+    get: {
+      tags: ['Relatórios'],
+      summary: 'Emite relatório do saldo atual de todos os itens de estoque',
+      security: [{ cookieSession: [] }],
+      responses: {
+        200: jsonResponse('Relatório de estoque.', schemaRef('RelatorioEstoque')),
+        401: responseRef('NaoAutorizado'),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
+  '/api/relatorios/historico-doacoes': {
+    get: {
+      tags: ['Relatórios'],
+      summary: 'Emite o histórico de doações registradas, com seus itens',
+      description: 'O histórico pode ser filtrado por datas e é paginado para limitar o tempo de resposta.',
+      security: [{ cookieSession: [] }],
+      parameters: [
+        { name: 'data_inicio', in: 'query', description: 'Data inicial inclusiva (AAAA-MM-DD).', schema: { type: 'string', format: 'date' } },
+        { name: 'data_fim', in: 'query', description: 'Data final inclusiva (AAAA-MM-DD).', schema: { type: 'string', format: 'date' } },
+        { name: 'pagina', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+        { name: 'limite', in: 'query', description: 'Quantidade de doações por página (máximo 500).', schema: { type: 'integer', minimum: 1, maximum: 500, default: 100 } }
+      ],
+      responses: {
+        200: jsonResponse('Histórico de doações.', schemaRef('RelatorioHistoricoDoacoes')),
+        400: responseRef('ErroRequisicao'),
+        401: responseRef('NaoAutorizado'),
+        500: responseRef('ErroServidor')
+      }
+    }
+  },
   '/api/eventos': {
     get: {
       tags: ['Eventos'],
@@ -829,6 +882,84 @@ Object.assign(module.exports.components.schemas, {
   StatusApi: {
     type: 'object',
     properties: { mensagem: { type: 'string', example: 'API DorcasGestão funcionando!' } }
+  },
+  RelatorioPartosProximos: {
+    type: 'object',
+    properties: {
+      gerado_em: { type: 'string', format: 'date-time' },
+      dias: { type: 'integer' },
+      quantidade: { type: 'integer' },
+      partos: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id_gestante: { type: 'integer' },
+            nome_gestante: { type: 'string' },
+            telefone: { type: 'string', nullable: true },
+            dpp: { type: 'string', format: 'date' },
+            dias_para_parto: { type: 'integer' },
+            grau_vulnerabilidade: { type: 'integer' }
+          }
+        }
+      }
+    }
+  },
+  RelatorioEstoque: {
+    type: 'object',
+    properties: {
+      gerado_em: { type: 'string', format: 'date-time' },
+      resumo: {
+        type: 'object',
+        properties: {
+          total_itens: { type: 'integer' },
+          itens_sem_estoque: { type: 'integer' },
+          itens_abaixo_minimo: { type: 'integer' },
+          itens_adequados: { type: 'integer' }
+        }
+      },
+      itens: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id_item: { type: 'integer' },
+            nome_item: { type: 'string' },
+            tamanho: { type: 'string', nullable: true },
+            unidade_medida: { type: 'string' },
+            quantidade_minima: { type: 'integer' },
+            id_categoria: { type: 'integer' },
+            nome_categoria: { type: 'string' },
+            quantidade_atual: { type: 'integer' },
+            local_armazenamento: { type: 'string', nullable: true },
+            situacao: { type: 'string', enum: ['SEM_ESTOQUE', 'ABAIXO_MINIMO', 'ADEQUADO'] }
+          }
+        }
+      }
+    }
+  },
+  RelatorioHistoricoDoacoes: {
+    type: 'object',
+    properties: {
+      gerado_em: { type: 'string', format: 'date-time' },
+      filtros: {
+        type: 'object',
+        properties: {
+          data_inicio: { type: 'string', format: 'date', nullable: true },
+          data_fim: { type: 'string', format: 'date', nullable: true }
+        }
+      },
+      paginacao: {
+        type: 'object',
+        properties: {
+          pagina: { type: 'integer' },
+          limite: { type: 'integer' },
+          total: { type: 'integer' },
+          total_paginas: { type: 'integer' }
+        }
+      },
+      doacoes: { type: 'array', items: schemaRef('DoacaoDetalhe') }
+    }
   },
   Colaborador: {
     type: 'object',

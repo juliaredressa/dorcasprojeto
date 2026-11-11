@@ -20,6 +20,7 @@ const colaboradoresRoutes = require("./routes/colaboradoresRoutes");
 const authRoutes = require("./routes/auth");
 const requireRoleAccess = require("./middleware/roleAccess");
 const eventosRoutes = require("./routes/eventosRoutes");
+const relatoriosRoutes = require("./routes/relatoriosRoutes");
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use("/api/kits", requireAuthentication, requireRoleAccess, kitRoutes);
 app.use("/api/estoque", requireAuthentication, requireRoleAccess, estoqueRoutes);
 app.use("/api/fila-prioridade", requireAuthentication, requireRoleAccess, filaPrioridadeRoutes);
 app.use("/api/eventos", requireAuthentication, requireRoleAccess, eventosRoutes);
+app.use("/api/relatorios", requireAuthentication, requireRoleAccess, relatoriosRoutes);
 
 app.get("/", (req, res) => {
     res.json({
