@@ -18,6 +18,7 @@ const formularioVazio = {
 function Products() {
   const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [pesquisa, setPesquisa] = useState("");
   const [form, setForm] = useState(formularioVazio);
   const [editando, setEditando] = useState(null);
   const [mensagem, setMensagem] = useState("");
@@ -178,6 +179,12 @@ function Products() {
     }
   }
 
+  const produtosFiltrados = produtos.filter((produto) =>
+    (produto.nome_item || "").toLocaleLowerCase("pt-BR").includes(
+      pesquisa.trim().toLocaleLowerCase("pt-BR")
+    )
+  );
+
   return (
     <PortalLayout active="produtos" contentClassName="management-content">
       <section className="management-heading">
@@ -322,11 +329,26 @@ function Products() {
             <h2>Produtos cadastrados</h2>
             <p>Catálogo de itens disponíveis para doação.</p>
           </div>
-          <span className="management-count">{produtos.length} produto(s)</span>
+          <span className="management-count">{produtosFiltrados.length} de {produtos.length} produto(s)</span>
+        </div>
+
+        <div className="management-form" style={{ marginBottom: "1rem" }}>
+          <label className="management-field" htmlFor="product-search">
+            Pesquisar produto pelo nome
+            <input
+              id="product-search"
+              type="search"
+              value={pesquisa}
+              onChange={(e) => setPesquisa(e.target.value)}
+              placeholder="Digite o nome do produto"
+            />
+          </label>
         </div>
 
         {produtos.length === 0 ? (
           <p className="management-empty">Nenhum produto cadastrado.</p>
+        ) : produtosFiltrados.length === 0 ? (
+          <p className="management-empty">Nenhum produto encontrado para essa pesquisa.</p>
         ) : (
           <div className="management-table-wrap">
             <table className="management-table">
@@ -344,7 +366,7 @@ function Products() {
               </thead>
 
               <tbody>
-                {produtos.map((produto) => (
+                {produtosFiltrados.map((produto) => (
                   <tr key={produto.id_item}>
                     <td>{produto.nome_item}</td>
                     <td>{produto.tamanho || "-"}</td>
